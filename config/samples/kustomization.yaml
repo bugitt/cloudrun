@@ -1,4 +1,5 @@
 ## Append samples you want in your CSV to this file as resources ##
 resources:
 - cloudapi_v1alpha1_application.yaml
+- cloudapi_v1alpha1_builder.yaml
 #+kubebuilder:scaffold:manifestskustomizesamples

@@ -37,6 +37,7 @@ const (
 
 // ApplicationSpec defines the desired state of Application
 type ApplicationSpec struct {
+	Build BuilderSpec `json:"build"`
 }
 
 // ApplicationStatus defines the observed state of Application
