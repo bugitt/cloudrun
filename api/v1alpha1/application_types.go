@@ -20,22 +20,29 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
+type ApplicationStage string
+
+const (
+	// ApplicationStagePending means the application is pending to be deployed.
+	ApplicationStagePending ApplicationStage = "Pending"
+	// ApplicationStageBuilding means the application is being built.
+	ApplicationStageBuilding ApplicationStage = "Building"
+	// ApplicationStageDeploying means the application is being deployed.
+	// If the application is a job, this stage means the job is running.
+	ApplicationStageDeploying ApplicationStage = "Deploying"
+	// ApplicationStageServing means the application is serving.
+	// If the application is a job, this stage means the job has finished.
+	ApplicationStageServing ApplicationStage = "Serving"
+)
 
 // ApplicationSpec defines the desired state of Application
 type ApplicationSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-
-	// Foo is an example field of Application. Edit application_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
 }
 
 // ApplicationStatus defines the observed state of Application
 type ApplicationStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	Stage             ApplicationStage `json:"stage"`
+	StatusWithMessage `json:",inline"`
 }
 
 //+kubebuilder:object:root=true
