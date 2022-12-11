@@ -31,9 +31,17 @@ const (
 	DIR   ContextFileType = "dir"
 )
 
-type BuilderContextLocalFS struct {
-	Path string          `json:"path"`
-	Type ContextFileType `json:"type"`
+type BuilderContextS3 struct {
+	Endpoint string `json:"endpoint,omitempty"`
+	Bucket   string `json:"bucket"`
+	Region   string `json:"region"`
+	// +kubebuilder:validation:Enum=http;https
+	Scheme          string `json:"scheme,omitempty"`
+	AccessKeyID     string `json:"accessKeyID"`
+	SecretAccessKey string `json:"secretAccessKey"`
+	ObjectKey       string `json:"objectKey"`
+
+	FileType ContextFileType `json:"fileType"`
 }
 
 type BuildContextGit struct {
@@ -42,12 +50,13 @@ type BuildContextGit struct {
 	EndpointWithPath string `json:"endpoint"`
 	Username         string `json:"username,omitempty"`
 	UserPassword     string `json:"userPassword,omitempty"`
+	Ref              string `json:"ref,omitempty"`
 }
 
 type BuilderContext struct {
-	LocalFS *BuilderContextLocalFS `json:"localFS,omitempty"`
-	Git     *BuildContextGit       `json:"git,omitempty"`
-	Raw     *string                `json:"raw,omitempty"`
+	S3  *BuilderContextS3 `json:"s3,omitempty"`
+	Git *BuildContextGit  `json:"git,omitempty"`
+	Raw *string           `json:"raw,omitempty"`
 }
 
 // BuilderSpec defines the desired state of Builder
