@@ -27,3 +27,5 @@ Dockerfile.cross
 .vscode
 
 .DS_Store
+
+samples/secret_samples/*
