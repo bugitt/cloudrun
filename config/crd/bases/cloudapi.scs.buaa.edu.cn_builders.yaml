@@ -1,0 +1,137 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.10.0
+  creationTimestamp: null
+  name: builders.cloudapi.scs.buaa.edu.cn
+spec:
+  group: cloudapi.scs.buaa.edu.cn
+  names:
+    kind: Builder
+    listKind: BuilderList
+    plural: builders
+    singular: builder
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .status.status
+      name: Status
+      type: string
+    - jsonPath: .status.otherMessage
+      name: Other
+      type: string
+    - jsonPath: .spec.destination
+      name: Tt
+      type: string
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: Builder is the Schema for the builders API
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: BuilderSpec defines the desired state of Builder
+            properties:
+              context:
+                properties:
+                  git:
+                    properties:
+                      endpoint:
+                        type: string
+                      ref:
+                        type: string
+                      scheme:
+                        default: https
+                        enum:
+                        - http
+                        - https
+                        type: string
+                      userPassword:
+                        type: string
+                      username:
+                        type: string
+                    required:
+                    - endpoint
+                    - scheme
+                    type: object
+                  raw:
+                    type: string
+                  s3:
+                    properties:
+                      accessKeyID:
+                        type: string
+                      bucket:
+                        type: string
+                      endpoint:
+                        default: s3.amazonaws.com
+                        type: string
+                      fileType:
+                        enum:
+                        - tar
+                        - tar.gz
+                        - zip
+                        - rar
+                        - dir
+                        type: string
+                      objectKey:
+                        type: string
+                      region:
+                        type: string
+                      scheme:
+                        enum:
+                        - http
+                        - https
+                        type: string
+                      secretAccessKey:
+                        type: string
+                    required:
+                    - accessKeyID
+                    - bucket
+                    - objectKey
+                    - region
+                    - secretAccessKey
+                    type: object
+                type: object
+              destination:
+                type: string
+              dockerfilePath:
+                type: string
+              pushSecretName:
+                default: push-secret
+                type: string
+            required:
+            - context
+            - destination
+            - dockerfilePath
+            type: object
+          status:
+            description: BuilderStatus defines the observed state of Builder
+            properties:
+              message:
+                type: string
+              otherMessage:
+                default: Pending
+                type: string
+              status:
+                type: string
+            type: object
+        required:
+        - spec
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
