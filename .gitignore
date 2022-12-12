@@ -28,4 +28,4 @@ Dockerfile.cross
 
 .DS_Store
 
-samples/secret_samples/**
+config/samples/secret_samples/
