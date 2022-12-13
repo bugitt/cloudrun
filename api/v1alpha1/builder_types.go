@@ -32,20 +32,22 @@ const (
 )
 
 type BuilderContextS3 struct {
+	//+kubebuilder:default:=s3.amazonaws.com
 	Endpoint string `json:"endpoint,omitempty"`
 	Bucket   string `json:"bucket"`
 	Region   string `json:"region"`
-	// +kubebuilder:validation:Enum=http;https
+	//+kubebuilder:validation:Enum=http;https
 	Scheme          string `json:"scheme,omitempty"`
 	AccessKeyID     string `json:"accessKeyID"`
-	SecretAccessKey string `json:"secretAccessKey"`
+	AccessSecretKey string `json:"accessSecretKey"`
 	ObjectKey       string `json:"objectKey"`
 
-	FileType ContextFileType `json:"fileType"`
+	FileType ContextFileType `json:"fileType,omitempty"`
 }
 
 type BuildContextGit struct {
-	// +kubebuilder:validation:Enum=http;https
+	//+kubebuilder:validation:Enum=http;https
+	//+kubebuilder:default:=https
 	Scheme           string `json:"scheme"`
 	EndpointWithPath string `json:"endpoint"`
 	Username         string `json:"username,omitempty"`
@@ -61,9 +63,12 @@ type BuilderContext struct {
 
 // BuilderSpec defines the desired state of Builder
 type BuilderSpec struct {
-	Context        BuilderContext `json:"context"`
-	DockerfilePath string         `json:"dockerfilePath"`
-	Destination    string         `json:"destination"`
+	Context BuilderContext `json:"context"`
+	//+kubebuilder:default:=Dockerfile
+	DockerfilePath string `json:"dockerfilePath"`
+	Destination    string `json:"destination"`
+	//+kubebuilder:default:=push-secret
+	PushSecretName string `json:"pushSecretName,omitempty"`
 }
 
 // BuilderStatus defines the observed state of Builder
@@ -72,6 +77,9 @@ type BuilderStatus struct {
 }
 
 //+kubebuilder:object:root=true
+//+kubebuilder:printcolumn:name="Target",type="string",JSONPath=`.spec.destination`
+//+kubebuilder:printcolumn:name="Status",type="string",JSONPath=`.status.status`
+//+kubebuilder:printcolumn:name="Message",type="string",JSONPath=`.status.message`
 //+kubebuilder:subresource:status
 
 // Builder is the Schema for the builders API
@@ -79,7 +87,7 @@ type Builder struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   BuilderSpec   `json:"spec,omitempty"`
+	Spec   BuilderSpec   `json:"spec"`
 	Status BuilderStatus `json:"status,omitempty"`
 }
 
