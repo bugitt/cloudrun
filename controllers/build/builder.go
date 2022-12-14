@@ -17,11 +17,14 @@ limitations under the License.
 package build
 
 import (
+	"encoding/json"
 	"path/filepath"
+	"reflect"
 
 	batchv1 "k8s.io/api/batch/v1"
 
 	"github.com/bugitt/cloudrun/api/v1alpha1"
+	cloudapiv1alpha1 "github.com/bugitt/cloudrun/api/v1alpha1"
 	"github.com/bugitt/cloudrun/controllers/core"
 	"github.com/pkg/errors"
 	apiv1 "k8s.io/api/core/v1"
@@ -49,6 +52,10 @@ const (
 
 const (
 	defaultPushSecretName = "push-secret"
+)
+
+const (
+	builderSpecKey = "builder-spec"
 )
 
 var (
@@ -140,4 +147,53 @@ func NewJob(ctx core.Context, builder *v1alpha1.Builder) (*batchv1.Job, error) {
 		},
 	}
 	return job, nil
+}
+
+// CompareAndUpdateBuilderSpec compares the builder spec stored in the existing configmap and update it.
+// It returns whether the controller should recreate the job
+func CompareAndUpdateBuilderSpec(ctx core.Context, spec cloudapiv1alpha1.BuilderSpec) (bool, error) {
+	cm, err := core.GetConfigMap(ctx, true)
+	if err != nil || cm == nil {
+		return false, errors.Wrap(err, "failed to get configmap when get builder spec")
+	}
+	builderSpecStr, ok := cm.Data[builderSpecKey]
+
+	if !ok {
+		// new added
+		builderSpecBytes, err := json.Marshal(spec)
+		if err != nil {
+			return false, errors.Wrap(err, "failed to marshal the builder spec")
+		}
+		cm.Data[builderSpecKey] = string(builderSpecBytes)
+		if err := ctx.Update(ctx, cm); err != nil {
+			return false, errors.Wrap(err, "failed to update the configmap")
+		}
+		return false, nil
+	}
+
+	oldSpec := new(cloudapiv1alpha1.BuilderSpec)
+	if err := json.Unmarshal([]byte(builderSpecStr), oldSpec); err != nil {
+		return false, errors.Wrap(err, "failed to unmarshal builderSpec when get builder spec")
+	}
+
+	// compare the new and old spec
+	if isSpecEqual(oldSpec, &spec) {
+		return false, nil
+	}
+
+	// not equal, need to update
+	newSpecBytes, err := json.Marshal(spec)
+	if err != nil {
+		return true, errors.Wrap(err, "failed to marshal the builder spec")
+	}
+	cm.Data[builderSpecKey] = string(newSpecBytes)
+	return true, ctx.Update(ctx, cm)
+}
+
+func isSpecEqual(oldSpec, newSpec *cloudapiv1alpha1.BuilderSpec) bool {
+	return reflect.DeepEqual(oldSpec, newSpec)
+}
+
+func CleanupMeta(ctx core.Context) error {
+	return core.CleanupSpec(ctx, builderSpecKey)
 }
