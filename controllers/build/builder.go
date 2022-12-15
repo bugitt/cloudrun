@@ -55,10 +55,6 @@ const (
 	defaultPushSecretName = "push-secret"
 )
 
-const (
-	builderSpecKey = "builder-spec"
-)
-
 var (
 	backoffLimit int32 = 0
 )
@@ -157,22 +153,18 @@ func NewJob(ctx core.Context, builder *v1alpha1.Builder) (*batchv1.Job, error) {
 
 // CompareAndUpdateBuilderSpec compares the builder spec stored in the existing configmap and update it.
 // It returns whether the controller should recreate the job
-func CompareAndUpdateBuilderSpec(ctx core.Context, spec cloudapiv1alpha1.BuilderSpec) (bool, error) {
-	cm, err := core.GetConfigMap(ctx, true)
-	if err != nil || cm == nil {
-		return false, errors.Wrap(err, "failed to get configmap when get builder spec")
-	}
-	builderSpecStr, ok := cm.Data[builderSpecKey]
+func CompareAndUpdateBuilderSpec(ctx core.Context, builder *cloudapiv1alpha1.Builder) (bool, error) {
+	builderSpecStr := builder.Status.SpecString
 
-	if !ok {
+	if len(builderSpecStr) == 0 {
 		// new added
-		builderSpecBytes, err := json.Marshal(spec)
+		builderSpecBytes, err := json.Marshal(builder.Spec)
 		if err != nil {
 			return false, errors.Wrap(err, "failed to marshal the builder spec")
 		}
-		cm.Data[builderSpecKey] = string(builderSpecBytes)
-		if err := ctx.Update(ctx, cm); err != nil {
-			return false, errors.Wrap(err, "failed to update the configmap")
+		builder.Status.SpecString = string(builderSpecBytes)
+		if err := ctx.Status().Update(ctx, builder); err != nil {
+			return false, errors.Wrap(err, "failed to update the builder spec string in status")
 		}
 		return false, nil
 	}
@@ -183,23 +175,19 @@ func CompareAndUpdateBuilderSpec(ctx core.Context, spec cloudapiv1alpha1.Builder
 	}
 
 	// compare the new and old spec
-	if isSpecEqual(oldSpec, &spec) {
+	if isSpecEqual(oldSpec, &builder.Spec) {
 		return false, nil
 	}
 
 	// not equal, need to update
-	newSpecBytes, err := json.Marshal(spec)
+	newSpecBytes, err := json.Marshal(builder.Spec)
 	if err != nil {
 		return true, errors.Wrap(err, "failed to marshal the builder spec")
 	}
-	cm.Data[builderSpecKey] = string(newSpecBytes)
-	return true, ctx.Update(ctx, cm)
+	builder.Status.SpecString = string(newSpecBytes)
+	return true, ctx.Status().Update(ctx, builder)
 }
 
 func isSpecEqual(oldSpec, newSpec *cloudapiv1alpha1.BuilderSpec) bool {
 	return reflect.DeepEqual(oldSpec, newSpec)
-}
-
-func CleanupMeta(ctx core.Context) error {
-	return core.CleanupSpec(ctx, builderSpecKey)
 }

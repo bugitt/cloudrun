@@ -74,6 +74,7 @@ type BuilderSpec struct {
 // BuilderStatus defines the observed state of Builder
 type BuilderStatus struct {
 	StatusWithMessage `json:",inline"`
+	SpecString        string `json:"specString,omitempty"`
 }
 
 //+kubebuilder:object:root=true

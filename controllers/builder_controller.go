@@ -97,7 +97,7 @@ func (r *BuilderReconciler) Reconcile(originalCtx context.Context, req ctrl.Requ
 		}
 	}
 
-	reCreateJob, err := build.CompareAndUpdateBuilderSpec(ctx, builder.Spec)
+	reCreateJob, err := build.CompareAndUpdateBuilderSpec(ctx, builder)
 	if err != nil {
 		err = errors.Wrap(err, "failed to compare and update builder spec")
 		r.updateStatus(ctx, builder, err)
@@ -147,10 +147,6 @@ func (r *BuilderReconciler) SetupWithManager(mgr ctrl.Manager) error {
 func (r *BuilderReconciler) cleanup(ctx core.Context) error {
 	// 1. cleanup the job
 	if err := r.deleteJob(ctx); err != nil {
-		return err
-	}
-	// 2. delete the configmap
-	if err := build.CleanupMeta(ctx); err != nil {
 		return err
 	}
 	return nil

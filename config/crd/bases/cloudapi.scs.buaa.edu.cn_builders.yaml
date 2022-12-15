@@ -123,6 +123,8 @@ spec:
                 description: Message is mainly used to store the error message when
                   the CRD is failed.
                 type: string
+              specString:
+                type: string
               status:
                 type: string
             required:
