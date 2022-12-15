@@ -112,6 +112,8 @@ func (r *BuilderReconciler) Reconcile(originalCtx context.Context, req ctrl.Requ
 			ctx.Error(err, "failed to cleanup the job")
 			return ctrl.Result{}, err
 		}
+		builder.Status.Status = cloudapiv1alpha1.StatusPending
+		r.updateStatus(ctx, builder, nil)
 		return ctrl.Result{RequeueAfter: 5 * time.Second}, nil
 	}
 

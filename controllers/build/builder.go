@@ -47,6 +47,7 @@ const (
 const (
 	s3CmdImageName  = "loheagn/ls3md:1.0.0"
 	unzipImageName  = "loheagn/go-unarr:0.1.6"
+	gitImageName    = "bitnami/git:2.39.0"
 	kanikoImageName = "scs.buaa.edu.cn:8081/iobs/kaniko-executor"
 )
 
@@ -126,6 +127,11 @@ func NewJob(ctx core.Context, builder *v1alpha1.Builder) (*batchv1.Job, error) {
 	case builder.Spec.Context.S3 != nil:
 		if err := addS3InitContainers(ctx, builder.Spec.Context.S3, &podSpec); err != nil {
 			return nil, errors.Wrap(err, "add s3 init containers")
+		}
+
+	case builder.Spec.Context.Git != nil:
+		if err := addGitInitContainers(ctx, builder.Spec.Context.Git, &podSpec); err != nil {
+			return nil, errors.Wrap(err, "add git init containers")
 		}
 
 		// TODO other cases

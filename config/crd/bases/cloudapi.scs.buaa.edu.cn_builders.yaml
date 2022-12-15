@@ -65,7 +65,6 @@ spec:
                         type: string
                     required:
                     - endpoint
-                    - scheme
                     type: object
                   raw:
                     type: string
@@ -116,7 +115,6 @@ spec:
             required:
             - context
             - destination
-            - dockerfilePath
             type: object
           status:
             description: BuilderStatus defines the observed state of Builder

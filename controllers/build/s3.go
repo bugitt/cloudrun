@@ -28,7 +28,7 @@ import (
 // addS3InitContainers adds needed containers and volumes to fetch context from s3 to the podTemplateSpec
 // this container will copy context from s3 to local emptyDir,
 // and the context file will be named to {{ prepareContextDir }}/{{ contextTarName }} (defined in build/builder.go)
-func addS3InitContainers(ctx core.Context, s3ContextCfg *v1alpha1.BuilderContextS3, pod *apiv1.PodSpec) error {
+func addS3InitContainers(ctx core.Context, s3ContextCfg *v1alpha1.BuilderContextS3, podSpec *apiv1.PodSpec) error {
 	// we also need an emptyDir to store the context tar file
 	prepareContextTarVolume := apiv1.Volume{
 		Name: prepareContextTarVolumeName,
@@ -41,7 +41,7 @@ func addS3InitContainers(ctx core.Context, s3ContextCfg *v1alpha1.BuilderContext
 		MountPath: prepareContextTarVolumeMountPath,
 	}
 
-	pod.Volumes = append(pod.Volumes, prepareContextTarVolume)
+	podSpec.Volumes = append(podSpec.Volumes, prepareContextTarVolume)
 
 	mcCopyContainer := apiv1.Container{
 		Name:  "fetch-s3-context",
@@ -79,7 +79,7 @@ func addS3InitContainers(ctx core.Context, s3ContextCfg *v1alpha1.BuilderContext
 		VolumeMounts: []apiv1.VolumeMount{emptyDirVolumeMount, workspaceMount()},
 	}
 
-	pod.InitContainers = append(pod.InitContainers, mcCopyContainer, unzipContainer)
+	podSpec.InitContainers = append(podSpec.InitContainers, mcCopyContainer, unzipContainer)
 
 	return nil
 }

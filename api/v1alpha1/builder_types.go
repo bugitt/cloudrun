@@ -48,11 +48,11 @@ type BuilderContextS3 struct {
 type BuildContextGit struct {
 	//+kubebuilder:validation:Enum=http;https
 	//+kubebuilder:default:=https
-	Scheme           string `json:"scheme"`
-	EndpointWithPath string `json:"endpoint"`
-	Username         string `json:"username,omitempty"`
-	UserPassword     string `json:"userPassword,omitempty"`
-	Ref              string `json:"ref,omitempty"`
+	Scheme           string  `json:"scheme,omitempty"`
+	EndpointWithPath string  `json:"endpoint"`
+	Username         *string `json:"username,omitempty"`
+	UserPassword     *string `json:"userPassword,omitempty"`
+	Ref              *string `json:"ref,omitempty"`
 }
 
 type BuilderContext struct {
@@ -65,7 +65,7 @@ type BuilderContext struct {
 type BuilderSpec struct {
 	Context BuilderContext `json:"context"`
 	//+kubebuilder:default:=Dockerfile
-	DockerfilePath string `json:"dockerfilePath"`
+	DockerfilePath string `json:"dockerfilePath,omitempty"`
 	Destination    string `json:"destination"`
 	//+kubebuilder:default:=push-secret
 	PushSecretName string `json:"pushSecretName,omitempty"`
