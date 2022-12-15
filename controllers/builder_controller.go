@@ -97,6 +97,8 @@ func (r *BuilderReconciler) Reconcile(originalCtx context.Context, req ctrl.Requ
 		}
 	}
 
+	build.FixBuilder(builder)
+
 	reCreateJob, err := build.CompareAndUpdateBuilderSpec(ctx, builder)
 	if err != nil {
 		err = errors.Wrap(err, "failed to compare and update builder spec")
@@ -131,10 +133,10 @@ func (r *BuilderReconciler) Reconcile(originalCtx context.Context, req ctrl.Requ
 	return ctrl.Result{}, nil
 }
 
-func (r *BuilderReconciler) finalizeBuilder(ctx core.Context, _ *cloudapiv1alpha1.Builder) error {
+func (r *BuilderReconciler) finalizeBuilder(ctx core.Context, builder *cloudapiv1alpha1.Builder) error {
 	ctx.Info("Finalizing Builder")
 	// the only thing we need to do is to delete the job
-	return r.cleanup(ctx)
+	return r.cleanup(ctx, builder)
 }
 
 // SetupWithManager sets up the controller with the Manager.
@@ -144,9 +146,13 @@ func (r *BuilderReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(r)
 }
 
-func (r *BuilderReconciler) cleanup(ctx core.Context) error {
+func (r *BuilderReconciler) cleanup(ctx core.Context, builder *cloudapiv1alpha1.Builder) error {
 	// 1. cleanup the job
 	if err := r.deleteJob(ctx); err != nil {
+		return err
+	}
+	// 2. delete dockerfile configmap
+	if err := build.DeleteDockerfileMapConfigmap(ctx, builder); err != nil {
 		return err
 	}
 	return nil
@@ -154,7 +160,7 @@ func (r *BuilderReconciler) cleanup(ctx core.Context) error {
 
 func (r *BuilderReconciler) createAndWatchJob(ctx core.Context, builder *cloudapiv1alpha1.Builder) error {
 	if r.isDoneOrFailed(builder) {
-		return r.cleanup(ctx)
+		return r.cleanup(ctx, builder)
 	}
 
 	// 1. check if the job is already running
@@ -207,14 +213,14 @@ func (r *BuilderReconciler) createAndWatchJob(ctx core.Context, builder *cloudap
 	case apiv1.PodFailed:
 		builder.Status.Status = cloudapiv1alpha1.StatusFailed
 		builder.Status.Message = podStatus.Message
-		if err := r.cleanup(ctx); err != nil {
+		if err := r.cleanup(ctx, builder); err != nil {
 			return nil
 		}
 		r.updateStatus(ctx, builder, nil)
 		return nil
 	case apiv1.PodSucceeded:
 		builder.Status.Status = cloudapiv1alpha1.StatusDone
-		if err = r.cleanup(ctx); err != nil {
+		if err = r.cleanup(ctx, builder); err != nil {
 			return nil
 		}
 		r.updateStatus(ctx, builder, nil)
@@ -264,6 +270,5 @@ func (r *BuilderReconciler) deleteJob(ctx core.Context) error {
 			return errors.Wrap(err, "delete job")
 		}
 	}
-	// TODO the raw dockerfile case
 	return nil
 }

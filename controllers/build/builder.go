@@ -70,6 +70,12 @@ func workspaceMount() apiv1.VolumeMount {
 	}
 }
 
+func FixBuilder(builder *v1alpha1.Builder) {
+	if builder.Spec.Context.Raw != nil {
+		builder.Spec.DockerfilePath = "Dockerfile"
+	}
+}
+
 func NewJob(ctx core.Context, builder *v1alpha1.Builder) (*batchv1.Job, error) {
 	// workspaceVolume is an emptyDir to store the context dir
 	workspaceVolume := apiv1.Volume{
@@ -130,7 +136,10 @@ func NewJob(ctx core.Context, builder *v1alpha1.Builder) (*batchv1.Job, error) {
 			return nil, errors.Wrap(err, "add git init containers")
 		}
 
-		// TODO other cases
+	case builder.Spec.Context.Raw != nil:
+		if err := addRawDockerfileInitContainers(ctx, *(builder.Spec.Context.Raw), &podSpec); err != nil {
+			return nil, errors.Wrap(err, "add raw init containers")
+		}
 	}
 	job := &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
