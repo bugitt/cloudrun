@@ -25,4 +25,13 @@ resources:
   kind: Builder
   path: github.com/bugitt/cloudrun/api/v1alpha1
   version: v1alpha1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: scs.buaa.edu.cn
+  group: cloudapi
+  kind: Deployer
+  path: github.com/bugitt/cloudrun/api/v1alpha1
+  version: v1alpha1
 version: "3"

@@ -76,6 +76,32 @@ rules:
   - patch
   - update
 - apiGroups:
+  - cloudapi.scs.buaa.edu.cn
+  resources:
+  - deployers
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - cloudapi.scs.buaa.edu.cn
+  resources:
+  - deployers/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - cloudapi.scs.buaa.edu.cn
+  resources:
+  - deployers/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
   - ""
   resources:
   - configmaps
