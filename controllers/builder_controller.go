@@ -122,7 +122,9 @@ func (r *BuilderReconciler) Reconcile(originalCtx context.Context, req ctrl.Requ
 	// create and exec image build job
 	if err := r.createAndWatchJob(ctx, builder); err != nil {
 		ctx.Error(err, "Failed to setup builder job.")
-		return ctrl.Result{}, errors.Wrap(err, "failed to setup builder job")
+		err = errors.Wrap(err, "failed to setup builder job")
+		r.updateStatus(ctx, builder, err)
+		return ctrl.Result{}, err
 	}
 
 	if !r.isDoneOrFailed(builder) {
