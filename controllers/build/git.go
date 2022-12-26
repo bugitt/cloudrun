@@ -24,7 +24,6 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 
 	cloudapiv1alpha1 "github.com/bugitt/cloudrun/api/v1alpha1"
-	"github.com/bugitt/cloudrun/controllers/core"
 )
 
 func gitURL(cfg *cloudapiv1alpha1.BuildContextGit) (string, error) {
@@ -65,7 +64,7 @@ func gitCommand(cfg *cloudapiv1alpha1.BuildContextGit) (string, error) {
 	), nil
 }
 
-func addGitInitContainers(ctx core.Context, gitCfg *cloudapiv1alpha1.BuildContextGit, podSpec *apiv1.PodSpec) error {
+func (ctx *Context) addGitInitContainers(gitCfg *cloudapiv1alpha1.BuildContextGit, podSpec *apiv1.PodSpec) error {
 	gitCmd, err := gitCommand(gitCfg)
 	if err != nil {
 		return errors.Wrap(err, "failed to generate git command")

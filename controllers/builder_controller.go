@@ -59,19 +59,25 @@ type BuilderReconciler struct {
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.13.0/pkg/reconcile
 func (r *BuilderReconciler) Reconcile(originalCtx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	_ = log.FromContext(originalCtx)
-	ctx := core.NewContext(originalCtx, r.Client, req)
+	logger := log.FromContext(originalCtx, "builder", req.NamespacedName)
 	builder := &cloudapiv1alpha1.Builder{}
 
 	err := r.Get(originalCtx, req.NamespacedName, builder)
 	if err != nil {
 		if client.IgnoreNotFound(err) == nil {
-			ctx.Info("Builder resource not found. Ignoring since object must be deleted.")
+			logger.Info("Builder resource not found. Ignoring since object must be deleted.")
 			return ctrl.Result{}, nil
 		}
-		ctx.Error(err, "Failed to get Builder.")
+		logger.Error(err, "Failed to get Builder.")
 		return ctrl.Result{}, errors.Wrap(err, "failed to get builder")
 	}
+
+	ctx := build.NewContext(
+		originalCtx,
+		r.Client,
+		logger,
+		builder,
+	)
 
 	isToBeDeleted := builder.GetDeletionTimestamp() != nil
 	if isToBeDeleted {
@@ -97,9 +103,9 @@ func (r *BuilderReconciler) Reconcile(originalCtx context.Context, req ctrl.Requ
 		}
 	}
 
-	build.FixBuilder(builder)
+	ctx.FixBuilder()
 
-	reCreateJob, err := build.CompareAndUpdateBuilderSpec(ctx, builder)
+	reCreateJob, err := ctx.CompareAndUpdateBuilderSpec()
 	if err != nil {
 		err = errors.Wrap(err, "failed to compare and update builder spec")
 		r.updateStatus(ctx, builder, err)
@@ -120,7 +126,7 @@ func (r *BuilderReconciler) Reconcile(originalCtx context.Context, req ctrl.Requ
 	}
 
 	// create and exec image build job
-	if err := r.createAndWatchJob(ctx, builder); err != nil {
+	if err := r.createAndWatchJob(ctx); err != nil {
 		ctx.Error(err, "Failed to setup builder job.")
 		err = errors.Wrap(err, "failed to setup builder job")
 		r.updateStatus(ctx, builder, err)
@@ -149,18 +155,13 @@ func (r *BuilderReconciler) SetupWithManager(mgr ctrl.Manager) error {
 }
 
 func (r *BuilderReconciler) cleanup(ctx core.Context, builder *cloudapiv1alpha1.Builder) error {
-	// 1. cleanup the job
-	if err := r.deleteJob(ctx); err != nil {
-		return err
-	}
-	// 2. delete dockerfile configmap
-	if err := build.DeleteDockerfileMapConfigmap(ctx, builder); err != nil {
-		return err
-	}
+	// do nothing. As we have already set the ownerReference of the job and other resources as the builder,
+	// the apiserver can help us to delete the sub resources automatically.
 	return nil
 }
 
-func (r *BuilderReconciler) createAndWatchJob(ctx core.Context, builder *cloudapiv1alpha1.Builder) error {
+func (r *BuilderReconciler) createAndWatchJob(ctx build.Context) error {
+	builder := ctx.Builder
 	if r.isDoneOrFailed(builder) {
 		return r.cleanup(ctx, builder)
 	}
@@ -175,7 +176,7 @@ func (r *BuilderReconciler) createAndWatchJob(ctx core.Context, builder *cloudap
 		builder.Status.Status = cloudapiv1alpha1.StatusPending
 		r.updateStatus(ctx, builder, nil)
 
-		job, err := build.NewJob(ctx, builder)
+		job, err := ctx.NewJob()
 		if err != nil {
 			return err
 		}

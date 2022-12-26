@@ -17,18 +17,22 @@ limitations under the License.
 package build
 
 import (
+	"context"
 	"encoding/json"
 	"path/filepath"
 	"reflect"
 
-	batchv1 "k8s.io/api/batch/v1"
-
 	"github.com/bugitt/cloudrun/api/v1alpha1"
 	cloudapiv1alpha1 "github.com/bugitt/cloudrun/api/v1alpha1"
 	"github.com/bugitt/cloudrun/controllers/core"
+	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
+	batchv1 "k8s.io/api/batch/v1"
 	apiv1 "k8s.io/api/core/v1"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	ktypes "k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const (
@@ -63,6 +67,33 @@ var (
 	contextTarFileFullPath = filepath.Join(prepareContextTarVolumeMountPath, contextTarName)
 )
 
+type Context struct {
+	core.Context
+	Builder *v1alpha1.Builder
+}
+
+func NewContext(originCtx context.Context, cli client.Client, logger logr.Logger, builder *v1alpha1.Builder) Context {
+	ownerReference := apimetav1.OwnerReference{
+		APIVersion:         builder.APIVersion,
+		Kind:               builder.Kind,
+		Name:               builder.Name,
+		UID:                builder.GetUID(),
+		BlockOwnerDeletion: core.BoolPtr(true),
+	}
+	defaultCtx := &core.DefaultContext{
+		Context:            originCtx,
+		Client:             cli,
+		Logger:             logger,
+		NamespacedNameVar:  ktypes.NamespacedName{Namespace: builder.Namespace, Name: builder.Name},
+		GetMasterResource:  func() (client.Object, error) { return builder, nil },
+		GetOwnerReferences: func() (apimetav1.OwnerReference, error) { return ownerReference, nil },
+	}
+	return Context{
+		Context: defaultCtx,
+		Builder: builder,
+	}
+}
+
 func workspaceMount() apiv1.VolumeMount {
 	return apiv1.VolumeMount{
 		Name:      workspaceVolumeName,
@@ -70,13 +101,15 @@ func workspaceMount() apiv1.VolumeMount {
 	}
 }
 
-func FixBuilder(builder *v1alpha1.Builder) {
-	if builder.Spec.Context.Raw != nil {
-		builder.Spec.DockerfilePath = "Dockerfile"
+func (ctx *Context) FixBuilder() {
+	if ctx.Builder.Spec.Context.Raw != nil {
+		ctx.Builder.Spec.DockerfilePath = "Dockerfile"
 	}
 }
 
-func NewJob(ctx core.Context, builder *v1alpha1.Builder) (*batchv1.Job, error) {
+func (ctx *Context) NewJob() (*batchv1.Job, error) {
+	builder := ctx.Builder
+
 	// workspaceVolume is an emptyDir to store the context dir
 	workspaceVolume := apiv1.Volume{
 		Name: workspaceVolumeName,
@@ -127,17 +160,17 @@ func NewJob(ctx core.Context, builder *v1alpha1.Builder) (*batchv1.Job, error) {
 
 	switch {
 	case builder.Spec.Context.S3 != nil:
-		if err := addS3InitContainers(ctx, builder.Spec.Context.S3, &podSpec); err != nil {
+		if err := ctx.addS3InitContainers(builder.Spec.Context.S3, &podSpec); err != nil {
 			return nil, errors.Wrap(err, "add s3 init containers")
 		}
 
 	case builder.Spec.Context.Git != nil:
-		if err := addGitInitContainers(ctx, builder.Spec.Context.Git, &podSpec); err != nil {
+		if err := ctx.addGitInitContainers(builder.Spec.Context.Git, &podSpec); err != nil {
 			return nil, errors.Wrap(err, "add git init containers")
 		}
 
 	case builder.Spec.Context.Raw != nil:
-		if err := addRawDockerfileInitContainers(ctx, *(builder.Spec.Context.Raw), &podSpec); err != nil {
+		if err := ctx.addRawDockerfileInitContainers(*(builder.Spec.Context.Raw), &podSpec); err != nil {
 			return nil, errors.Wrap(err, "add raw init containers")
 		}
 	}
@@ -162,7 +195,8 @@ func NewJob(ctx core.Context, builder *v1alpha1.Builder) (*batchv1.Job, error) {
 
 // CompareAndUpdateBuilderSpec compares the builder spec stored in the existing configmap and update it.
 // It returns whether the controller should recreate the job
-func CompareAndUpdateBuilderSpec(ctx core.Context, builder *cloudapiv1alpha1.Builder) (bool, error) {
+func (ctx *Context) CompareAndUpdateBuilderSpec() (bool, error) {
+	builder := ctx.Builder
 	builderSpecStr := builder.Status.SpecString
 
 	if len(builderSpecStr) == 0 {

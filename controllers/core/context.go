@@ -22,9 +22,9 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	ktypes "k8s.io/apimachinery/pkg/types"
-	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 )
@@ -46,34 +46,27 @@ type Context interface {
 	GetResource(obj client.Object) (bool, error)
 }
 
-func NewContext(ctx context.Context, client client.Client, req ctrl.Request) Context {
-	logger := ctrl.Log.WithValues("Request.Namespace", req.Namespace, "Request.Name", req.Name)
-	return &DefaultContext{
-		Context:        ctx,
-		Client:         client,
-		Logger:         logger,
-		namespacedName: req.NamespacedName,
-	}
-}
-
 type DefaultContext struct {
 	context.Context
 	client.Client
 	logr.Logger
 
-	namespacedName ktypes.NamespacedName
+	NamespacedNameVar ktypes.NamespacedName
+
+	GetMasterResource  func() (client.Object, error)
+	GetOwnerReferences func() (apimetav1.OwnerReference, error)
 }
 
 func (ctx *DefaultContext) Name() string {
-	return ctx.namespacedName.Name
+	return ctx.NamespacedNameVar.Name
 }
 
 func (ctx *DefaultContext) Namespace() string {
-	return ctx.namespacedName.Namespace
+	return ctx.NamespacedNameVar.Namespace
 }
 
 func (ctx *DefaultContext) NamespacedName() ktypes.NamespacedName {
-	return ctx.namespacedName
+	return ctx.NamespacedNameVar
 }
 
 func (ctx *DefaultContext) Info(msg string, keysAndValues ...interface{}) {
@@ -92,7 +85,26 @@ func (ctx *DefaultContext) Errorf(err error, format string, args ...interface{})
 	ctx.Logger.Error(err, fmt.Sprintf(format, args...))
 }
 
+func setOwnerReference(obj client.Object, ownerRef apimetav1.OwnerReference) {
+	refList := obj.GetOwnerReferences()
+	for _, ref := range refList {
+		if ref.UID == ownerRef.UID {
+			return
+		}
+	}
+	refList = append(refList, ownerRef)
+	obj.SetOwnerReferences(refList)
+}
+
 func (ctx *DefaultContext) CreateResource(obj client.Object, force bool) error {
+	// set the owner reference
+	ownerRef, err := ctx.GetOwnerReferences()
+	if err != nil {
+		ctx.Error(err, "failed get owner reference")
+		return errors.Wrap(err, "failed get shi")
+	}
+	setOwnerReference(obj, ownerRef)
+
 	placeHolder := &unstructured.Unstructured{}
 	gvk, err := apiutil.GVKForObject(obj, ctx.Client.Scheme())
 	if err != nil {
@@ -119,14 +131,14 @@ func (ctx *DefaultContext) CreateResource(obj client.Object, force bool) error {
 		}
 	}
 	if err := ctx.Create(ctx, obj); err != nil {
-		ctx.Error(err, fmt.Sprintf("Failed to create %s %s/%s", obj.GetObjectKind().GroupVersionKind().Kind, obj.GetNamespace(), obj.GetName()))
+		ctx.Error(err, fmt.Sprintf("failed to create %s %s/%s", obj.GetObjectKind().GroupVersionKind().Kind, obj.GetNamespace(), obj.GetName()))
 		return errors.Wrap(err, fmt.Sprintf("failed to create %s %s/%s", obj.GetObjectKind().GroupVersionKind().Kind, obj.GetNamespace(), obj.GetName()))
 	}
 	return nil
 }
 
 func (ctx *DefaultContext) GetResource(obj client.Object) (bool, error) {
-	if err := ctx.Get(ctx, ctx.namespacedName, obj); err != nil {
+	if err := ctx.Get(ctx, ctx.NamespacedNameVar, obj); err != nil {
 		if client.IgnoreNotFound(err) != nil {
 			ctx.Error(err, fmt.Sprintf("Failed to get %s %s/%s", obj.GetObjectKind().GroupVersionKind().Kind, obj.GetNamespace(), obj.GetName()))
 			return false, errors.Wrap(err, fmt.Sprintf("failed to get %s %s/%s", obj.GetObjectKind().GroupVersionKind().Kind, obj.GetNamespace(), obj.GetName()))
