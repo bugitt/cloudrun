@@ -15,7 +15,14 @@ spec:
     singular: deployer
   scope: Namespaced
   versions:
-  - name: v1alpha1
+  - additionalPrinterColumns:
+    - jsonPath: .status.status
+      name: Status
+      type: string
+    - jsonPath: .status.message
+      name: Message
+      type: string
+    name: v1alpha1
     schema:
       openAPIV3Schema:
         description: Deployer is the Schema for the deployers API
@@ -35,14 +42,98 @@ spec:
           spec:
             description: DeployerSpec defines the desired state of Deployer
             properties:
-              foo:
-                description: Foo is an example field of Deployer. Edit deployer_types.go
-                  to remove/update
+              containers:
+                items:
+                  properties:
+                    args:
+                      items:
+                        type: string
+                      type: array
+                    command:
+                      items:
+                        type: string
+                      type: array
+                    env:
+                      items:
+                        properties:
+                          name:
+                            type: string
+                          value:
+                            type: string
+                        required:
+                        - name
+                        - value
+                        type: object
+                      type: array
+                    image:
+                      type: string
+                    initial:
+                      default: false
+                      type: boolean
+                    name:
+                      type: string
+                    port:
+                      items:
+                        properties:
+                          export:
+                            default: false
+                            type: boolean
+                          port:
+                            format: int32
+                            type: integer
+                          protocol:
+                            default: tcp
+                            enum:
+                            - tcp
+                            - udp
+                            - sctp
+                            type: string
+                        required:
+                        - port
+                        type: object
+                      type: array
+                    resource:
+                      properties:
+                        cpu:
+                          format: int32
+                          type: integer
+                        memory:
+                          format: int32
+                          type: integer
+                      required:
+                      - cpu
+                      - memory
+                      type: object
+                  required:
+                  - image
+                  - name
+                  - resource
+                  type: object
+                minItems: 1
+                type: array
+              deployType:
+                enum:
+                - job
+                - service
                 type: string
+            required:
+            - containers
+            - deployType
             type: object
           status:
             description: DeployerStatus defines the observed state of Deployer
+            properties:
+              message:
+                description: Message is mainly used to store the error message when
+                  the CRD is failed.
+                type: string
+              status:
+                type: string
+            required:
+            - status
             type: object
+        required:
+        - spec
         type: object
     served: true
     storage: true

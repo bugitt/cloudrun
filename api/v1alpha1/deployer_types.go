@@ -20,25 +20,68 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
+type DeployType string
+
+const (
+	JOB     DeployType = "job"
+	SERVICE DeployType = "service"
+)
+
+type Env struct {
+	Name  string `json:"name"`
+	Value string `json:"value"`
+}
+
+type Protocol string
+
+const (
+	TCP  Protocol = "tcp"
+	UDP  Protocol = "udp"
+	SCTP Protocol = "sctp"
+)
+
+type Port struct {
+	Port int32 `json:"port"`
+	//+kubebuilder:default:=tcp
+	//+kubebuilder:validation:Enum=tcp;udp;sctp
+	Protocol Protocol `json:"protocol,omitempty"`
+	//+kubebuilder:default:=false
+	Export bool `json:"export,omitempty"`
+}
+
+type ContainerResource struct {
+	CPU    int32 `json:"cpu"`    // m, 1000m = 1 core
+	Memory int32 `json:"memory"` // Mi, 1024Mi = 1Gi
+}
+
+type ContainerSpec struct {
+	Name     string            `json:"name"`
+	Image    string            `json:"image"`
+	Resource ContainerResource `json:"resource"`
+	//+kubebuilder:default:=false
+	Initial bool     `json:"initial,omitempty"`
+	Command []string `json:"command,omitempty"`
+	Args    []string `json:"args,omitempty"`
+	Envs    []Env    `json:"env,omitempty"`
+	Ports   []Port   `json:"port,omitempty"`
+}
 
 // DeployerSpec defines the desired state of Deployer
 type DeployerSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-
-	// Foo is an example field of Deployer. Edit deployer_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
+	//+kubebuilder:validation:Enum=job;service
+	DeployType DeployType `json:"deployType"`
+	//+kubebuilder:validation:MinItems=1
+	Containers []ContainerSpec `json:"containers"`
 }
 
 // DeployerStatus defines the observed state of Deployer
 type DeployerStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	StatusWithMessage `json:",inline"`
 }
 
 //+kubebuilder:object:root=true
+//+kubebuilder:printcolumn:name="Status",type="string",JSONPath=`.status.status`
+//+kubebuilder:printcolumn:name="Message",type="string",JSONPath=`.status.message`
 //+kubebuilder:subresource:status
 
 // Deployer is the Schema for the deployers API
@@ -46,7 +89,7 @@ type Deployer struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   DeployerSpec   `json:"spec,omitempty"`
+	Spec   DeployerSpec   `json:"spec"`
 	Status DeployerStatus `json:"status,omitempty"`
 }
 
