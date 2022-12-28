@@ -29,7 +29,6 @@ func CreateAndWatchJob[T types.CloudRunCRD](
 	checkJobChanged func() (bool, error),
 ) error {
 	reCreateJob, err := checkJobChanged()
-	ctx.Info("check job changed", "reCreateJob", reCreateJob)
 	if err != nil {
 		return errors.Wrap(err, "failed to compare and update old job spec")
 	}
@@ -69,15 +68,13 @@ func CreateAndWatchJob[T types.CloudRunCRD](
 	// 3. watch the job status
 	// as we will only create just on pod in the job,
 	// we can use the status of pod to represent the status of job
-	innerStatus, message, err := getStatusFromPod(ctx, job.Spec.Selector)
+	status, message, err := GetStatusFromPod(ctx, job.Spec.Selector)
 	if err != nil {
 		return errors.Wrap(err, "failed to get status from pod")
 	}
-	obj.CommonStatus().Status = innerStatus
+	obj.CommonStatus().Status = status
+	obj.CommonStatus().Message = message
 
-	if len(message) > 0 {
-		obj.CommonStatus().Message = message
-	}
 	if IsDoneOrFailed(obj) {
 		if err := DeleteJob(ctx); err != nil {
 			return errors.Wrap(err, "failed to cleanup the old job")

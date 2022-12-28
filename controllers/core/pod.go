@@ -25,7 +25,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func getStatusFromPod(ctx Context, selector *metav1.LabelSelector) (status types.Status, message string, err error) {
+func GetStatusFromPod(ctx Context, selector *metav1.LabelSelector) (status types.Status, message string, err error) {
 	podList := &apiv1.PodList{}
 	posListOptions := &client.ListOptions{
 		LabelSelector: labels.SelectorFromSet(selector.MatchLabels),
