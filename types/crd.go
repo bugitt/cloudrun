@@ -14,15 +14,15 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package core
+package types
 
-import "github.com/bugitt/cloudrun/types"
+import "sigs.k8s.io/controller-runtime/pkg/client"
 
-func BoolPtr(b bool) *bool {
-	return &b
-}
+type DecodeFunc func(string) (CloudRunCRD, error)
 
-func IsDoneOrFailed(crd types.CloudRunCRD) bool {
-	status := crd.CommonStatus().Status
-	return status == types.StatusDone || status == types.StatusFailed
+type CloudRunCRD interface {
+	client.Object
+
+	GetDecoder() DecodeFunc
+	CommonStatus() *CommonStatus
 }

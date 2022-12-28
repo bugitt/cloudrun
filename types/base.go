@@ -14,15 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package core
+package types
 
-import "github.com/bugitt/cloudrun/types"
-
-func BoolPtr(b bool) *bool {
-	return &b
-}
-
-func IsDoneOrFailed(crd types.CloudRunCRD) bool {
-	status := crd.CommonStatus().Status
-	return status == types.StatusDone || status == types.StatusFailed
+type Empty interface {
 }

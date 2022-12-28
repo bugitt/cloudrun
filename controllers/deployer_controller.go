@@ -25,6 +25,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	cloudapiv1alpha1 "github.com/bugitt/cloudrun/api/v1alpha1"
+	"github.com/bugitt/cloudrun/controllers/deploy"
+	"github.com/bugitt/cloudrun/controllers/finalize"
+	"github.com/pkg/errors"
 )
 
 // DeployerReconciler reconciles a Deployer object
@@ -36,22 +39,76 @@ type DeployerReconciler struct {
 //+kubebuilder:rbac:groups=cloudapi.scs.buaa.edu.cn,resources=deployers,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=cloudapi.scs.buaa.edu.cn,resources=deployers/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=cloudapi.scs.buaa.edu.cn,resources=deployers/finalizers,verbs=update
+//+kubebuilder:rbac:groups=core,resources=pods,verbs=get;list;watch;create;delete
+//+kubebuilder:rbac:groups=core,resources=pods/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=core,resources=secrets,verbs=get;list;watch;create;delete
+//+kubebuilder:rbac:groups=core,resources=secrets/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;delete
+//+kubebuilder:rbac:groups=apps,resources=deployments/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=batch,resources=jobs,verbs=get;list;watch;create;delete
+//+kubebuilder:rbac:groups=batch,resources=jobs/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=core,resources=services,verbs=get;list;watch;create;delete
+//+kubebuilder:rbac:groups=core,resources=services/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=core,resources=configmaps,verbs=get;list;watch;create;delete
+//+kubebuilder:rbac:groups=core,resources=configmaps/status,verbs=get;update;patch
 
-// Reconcile is part of the main kubernetes reconciliation loop which aims to
-// move the current state of the cluster closer to the desired state.
-// TODO(user): Modify the Reconcile function to compare the state specified by
-// the Deployer object against the actual cluster state, and then
-// perform operations to make the cluster state reflect the state specified by
-// the user.
-//
-// For more details, check Reconcile and its Result here:
-// - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.13.0/pkg/reconcile
-func (r *DeployerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	_ = log.FromContext(ctx)
+func (r *DeployerReconciler) Reconcile(originalCtx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	logger := log.FromContext(originalCtx, "builder", req.NamespacedName)
+	deployer := &cloudapiv1alpha1.Deployer{}
 
-	// TODO(user): your logic here
+	err := r.Get(originalCtx, req.NamespacedName, deployer)
+	if err != nil {
+		if client.IgnoreNotFound(err) == nil {
+			logger.Info("Deployer resource not found. Ignoring since object must be deleted.")
+			return ctrl.Result{}, nil
+		}
+		logger.Error(err, "Failed to get Deployer.")
+		return ctrl.Result{}, errors.Wrap(err, "failed to get deployer")
+	}
+
+	ctx := deploy.NewContext(
+		originalCtx,
+		r.Client,
+		logger,
+		deployer,
+	)
+
+	isToBeDeleted := deployer.GetDeletionTimestamp() != nil
+	if isToBeDeleted {
+		if finalize.Contains(deployer) {
+			if err := r.finalizeDeployer(ctx); err != nil {
+				return ctrl.Result{}, errors.Wrap(err, "failed to finalize deployer")
+			}
+
+			finalize.Remove(deployer)
+			err := r.Update(originalCtx, deployer)
+			if err != nil {
+				return ctrl.Result{}, errors.Wrap(err, "failed to update deployer")
+			}
+		}
+		return ctrl.Result{}, nil
+	}
+
+	if !finalize.Contains(deployer) {
+		finalize.Add(deployer)
+		if err := r.Update(originalCtx, deployer); err != nil {
+			ctx.Error(err, "Failed to update deployer after add finalizer")
+			return ctrl.Result{}, errors.Wrap(err, "failed to update deployer")
+		}
+	}
 
 	return ctrl.Result{}, nil
+}
+
+func (r *DeployerReconciler) finalizeDeployer(ctx *deploy.Context) error {
+	ctx.Info("Start to finalize Deployer")
+	// TODO add your finalizer logic here
+	return nil
+}
+
+func (r *DeployerReconciler) handleJob(ctx *deploy.Context) error {
+	ctx.Info("Start to handle job")
+	return nil
 }
 
 // SetupWithManager sets up the controller with the Manager.

@@ -17,6 +17,10 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"encoding/json"
+
+	"github.com/bugitt/cloudrun/types"
+	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -73,14 +77,13 @@ type BuilderSpec struct {
 
 // BuilderStatus defines the observed state of Builder
 type BuilderStatus struct {
-	StatusWithMessage `json:",inline"`
-	SpecString        string `json:"specString,omitempty"`
+	Base *types.CommonStatus `json:"base,omitempty"`
 }
 
 //+kubebuilder:object:root=true
 //+kubebuilder:printcolumn:name="Target",type="string",JSONPath=`.spec.destination`
-//+kubebuilder:printcolumn:name="Status",type="string",JSONPath=`.status.status`
-//+kubebuilder:printcolumn:name="Message",type="string",JSONPath=`.status.message`
+//+kubebuilder:printcolumn:name="Status",type="string",JSONPath=`.status.base.status`
+//+kubebuilder:printcolumn:name="Message",type="string",JSONPath=`.status.base.message`
 //+kubebuilder:subresource:status
 
 // Builder is the Schema for the builders API
@@ -103,4 +106,21 @@ type BuilderList struct {
 
 func init() {
 	SchemeBuilder.Register(&Builder{}, &BuilderList{})
+}
+
+func (b *Builder) GetDecoder() types.DecodeFunc {
+	return func(str string) (types.CloudRunCRD, error) {
+		obj := new(Builder)
+		if err := json.Unmarshal([]byte(str), obj); err != nil {
+			return nil, errors.Wrap(err, "unmarshal builder error")
+		}
+		return obj, nil
+	}
+}
+
+func (b *Builder) CommonStatus() *types.CommonStatus {
+	if b.Status.Base == nil {
+		b.Status.Base = &types.CommonStatus{}
+	}
+	return b.Status.Base
 }

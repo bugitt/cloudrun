@@ -18,7 +18,6 @@ package build
 
 import (
 	"context"
-	"encoding/json"
 	"path/filepath"
 	"reflect"
 
@@ -72,7 +71,7 @@ type Context struct {
 	Builder *v1alpha1.Builder
 }
 
-func NewContext(originCtx context.Context, cli client.Client, logger logr.Logger, builder *v1alpha1.Builder) Context {
+func NewContext(originCtx context.Context, cli client.Client, logger logr.Logger, builder *v1alpha1.Builder) *Context {
 	ownerReference := apimetav1.OwnerReference{
 		APIVersion:         builder.APIVersion,
 		Kind:               builder.Kind,
@@ -88,7 +87,7 @@ func NewContext(originCtx context.Context, cli client.Client, logger logr.Logger
 		GetMasterResource:  func() (client.Object, error) { return builder, nil },
 		GetOwnerReferences: func() (apimetav1.OwnerReference, error) { return ownerReference, nil },
 	}
-	return Context{
+	return &Context{
 		Context: defaultCtx,
 		Builder: builder,
 	}
@@ -193,44 +192,17 @@ func (ctx *Context) NewJob() (*batchv1.Job, error) {
 	return job, nil
 }
 
-// CompareAndUpdateBuilderSpec compares the builder spec stored in the existing configmap and update it.
-// It returns whether the controller should recreate the job
-func (ctx *Context) CompareAndUpdateBuilderSpec() (bool, error) {
+func (ctx *Context) CheckJobChanged() (bool, error) {
 	builder := ctx.Builder
-	builderSpecStr := builder.Status.SpecString
-
-	if len(builderSpecStr) == 0 {
-		// new added
-		builderSpecBytes, err := json.Marshal(builder.Spec)
-		if err != nil {
-			return false, errors.Wrap(err, "failed to marshal the builder spec")
-		}
-		builder.Status.SpecString = string(builderSpecBytes)
-		if err := ctx.Status().Update(ctx, builder); err != nil {
-			return false, errors.Wrap(err, "failed to update the builder spec string in status")
-		}
-		return false, nil
-	}
-
-	oldSpec := new(cloudapiv1alpha1.BuilderSpec)
-	if err := json.Unmarshal([]byte(builderSpecStr), oldSpec); err != nil {
-		return false, errors.Wrap(err, "failed to unmarshal builderSpec when get builder spec")
-	}
-
-	// compare the new and old spec
-	if isSpecEqual(oldSpec, &builder.Spec) {
-		return false, nil
-	}
-
-	// not equal, need to update
-	newSpecBytes, err := json.Marshal(builder.Spec)
-	if err != nil {
-		return true, errors.Wrap(err, "failed to marshal the builder spec")
-	}
-	builder.Status.SpecString = string(newSpecBytes)
-	return true, ctx.Status().Update(ctx, builder)
+	return core.CheckJobChanged(
+		ctx,
+		builder,
+		func(oldObj, newObj *cloudapiv1alpha1.Builder) bool {
+			return isSpecEqual(*oldObj, *newObj)
+		},
+	)
 }
 
-func isSpecEqual(oldSpec, newSpec *cloudapiv1alpha1.BuilderSpec) bool {
-	return reflect.DeepEqual(oldSpec, newSpec)
+func isSpecEqual(oldBuilder, newBuilder cloudapiv1alpha1.Builder) bool {
+	return reflect.DeepEqual(oldBuilder.Spec, newBuilder.Spec)
 }

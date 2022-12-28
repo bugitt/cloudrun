@@ -115,6 +115,11 @@ spec:
           status:
             description: ApplicationStatus defines the observed state of Application
             properties:
+              historyList:
+                description: HistoryList is used to store the history of the CRD.
+                items:
+                  type: string
+                type: array
               message:
                 description: Message is mainly used to store the error message when
                   the CRD is failed.

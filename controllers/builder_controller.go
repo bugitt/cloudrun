@@ -22,8 +22,6 @@ import (
 
 	"github.com/pkg/errors"
 	batchv1 "k8s.io/api/batch/v1"
-	apiv1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -53,11 +51,6 @@ type BuilderReconciler struct {
 //+kubebuilder:rbac:groups=core,resources=configmaps,verbs=get;list;watch;create;delete
 //+kubebuilder:rbac:groups=core,resources=configmaps/status,verbs=get;update;patch
 
-// Reconcile is part of the main kubernetes reconciliation loop which aims to
-// move the current state of the cluster closer to the desired state.
-//
-// For more details, check Reconcile and its Result here:
-// - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.13.0/pkg/reconcile
 func (r *BuilderReconciler) Reconcile(originalCtx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := log.FromContext(originalCtx, "builder", req.NamespacedName)
 	builder := &cloudapiv1alpha1.Builder{}
@@ -82,7 +75,7 @@ func (r *BuilderReconciler) Reconcile(originalCtx context.Context, req ctrl.Requ
 	isToBeDeleted := builder.GetDeletionTimestamp() != nil
 	if isToBeDeleted {
 		if finalize.Contains(builder) {
-			if err := r.finalizeBuilder(ctx, builder); err != nil {
+			if err := r.finalizeBuilder(ctx); err != nil {
 				return ctrl.Result{}, errors.Wrap(err, "failed to finalize builder")
 			}
 
@@ -105,46 +98,27 @@ func (r *BuilderReconciler) Reconcile(originalCtx context.Context, req ctrl.Requ
 
 	ctx.FixBuilder()
 
-	reCreateJob, err := ctx.CompareAndUpdateBuilderSpec()
-	if err != nil {
-		err = errors.Wrap(err, "failed to compare and update builder spec")
-		r.updateStatus(ctx, builder, err)
-		ctx.Error(err, "failed to compare and update builder spec")
-		return ctrl.Result{}, err
-	}
-
-	if reCreateJob {
-		if err := r.deleteJob(ctx); err != nil {
-			err = errors.Wrap(err, "failed to cleanup the job")
-			r.updateStatus(ctx, builder, err)
-			ctx.Error(err, "failed to cleanup the job")
-			return ctrl.Result{}, err
-		}
-		builder.Status.Status = cloudapiv1alpha1.StatusPending
-		r.updateStatus(ctx, builder, nil)
-		return ctrl.Result{RequeueAfter: 5 * time.Second}, nil
-	}
-
 	// create and exec image build job
-	if err := r.createAndWatchJob(ctx); err != nil {
+	if err := r.createAndWatchJobV2(ctx); err != nil {
 		ctx.Error(err, "Failed to setup builder job.")
 		err = errors.Wrap(err, "failed to setup builder job")
-		r.updateStatus(ctx, builder, err)
+		core.PublishStatus(ctx, builder, err)
 		return ctrl.Result{}, err
 	}
 
-	if !r.isDoneOrFailed(builder) {
+	core.PublishStatus(ctx, builder, nil)
+
+	if !core.IsDoneOrFailed(builder) {
 		return ctrl.Result{RequeueAfter: 5 * time.Second}, nil
 	}
-
 	ctx.Info("Builder job has been done or failed. Ignoring.")
 	return ctrl.Result{}, nil
 }
 
-func (r *BuilderReconciler) finalizeBuilder(ctx core.Context, builder *cloudapiv1alpha1.Builder) error {
+func (r *BuilderReconciler) finalizeBuilder(ctx core.Context) error {
 	ctx.Info("Finalizing Builder")
 	// the only thing we need to do is to delete the job
-	return r.cleanup(ctx, builder)
+	return r.cleanup(ctx)
 }
 
 // SetupWithManager sets up the controller with the Manager.
@@ -154,124 +128,21 @@ func (r *BuilderReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(r)
 }
 
-func (r *BuilderReconciler) cleanup(ctx core.Context, builder *cloudapiv1alpha1.Builder) error {
+func (r *BuilderReconciler) cleanup(ctx core.Context) error {
 	// do nothing. As we have already set the ownerReference of the job and other resources as the builder,
 	// the apiserver can help us to delete the sub resources automatically.
 	return nil
 }
 
-func (r *BuilderReconciler) createAndWatchJob(ctx build.Context) error {
-	builder := ctx.Builder
-	if r.isDoneOrFailed(builder) {
-		return r.cleanup(ctx, builder)
-	}
-
-	// 1. check if the job is already running
-	job, err := r.getJob(ctx)
-	if err != nil {
-		return err
-	}
-	// 2. if not, create a new job
-	if job == nil {
-		builder.Status.Status = cloudapiv1alpha1.StatusPending
-		r.updateStatus(ctx, builder, nil)
-
-		job, err := ctx.NewJob()
-		if err != nil {
-			return err
-		}
-		if err := ctx.CreateResource(job, false); err != nil {
-			return err
-		}
-		return nil
-	}
-
-	// 3. watch the job status
-	// as we will only create just on pod in the job,
-	// we can use the status of pod to represent the status of job
-	podList := &apiv1.PodList{}
-	posListOptions := &client.ListOptions{
-		LabelSelector: labels.SelectorFromSet(job.Spec.Selector.MatchLabels),
-	}
-	if err := ctx.List(ctx, podList, posListOptions); err != nil {
-		ctx.Error(err, "failed to list pod")
-		return errors.Wrap(err, "failed to list pod")
-	}
-	if len(podList.Items) == 0 {
-		builder.Status.Status = cloudapiv1alpha1.StatusPending
-		r.updateStatus(ctx, builder, nil)
-		return nil
-	}
-	pod := podList.Items[0]
-	podStatus := pod.Status
-	switch podStatus.Phase {
-	case apiv1.PodPending:
-		builder.Status.Status = cloudapiv1alpha1.StatusPending
-		r.updateStatus(ctx, builder, nil)
-		return nil
-	case apiv1.PodRunning:
-		builder.Status.Status = cloudapiv1alpha1.StatusDoing
-		r.updateStatus(ctx, builder, nil)
-		return nil
-	case apiv1.PodFailed:
-		builder.Status.Status = cloudapiv1alpha1.StatusFailed
-		builder.Status.Message = podStatus.Message
-		if err := r.cleanup(ctx, builder); err != nil {
-			return nil
-		}
-		r.updateStatus(ctx, builder, nil)
-		return nil
-	case apiv1.PodSucceeded:
-		builder.Status.Status = cloudapiv1alpha1.StatusDone
-		if err = r.cleanup(ctx, builder); err != nil {
-			return nil
-		}
-		r.updateStatus(ctx, builder, nil)
-		return nil
-	}
-	return nil
-}
-
-func (r *BuilderReconciler) updateStatus(ctx core.Context, builder *cloudapiv1alpha1.Builder, err error) {
-	if err != nil {
-		builder.Status.Status = cloudapiv1alpha1.StatusFailed
-		builder.Status.Message = err.Error()
-	}
-	ctx.Infof("try to update builder status(%s, %s)", builder.Status.Status, builder.Status.Message)
-	if err := r.Status().Update(ctx, builder); err != nil {
-		ctx.Error(err, "failed to update builder status")
-	} else {
-		ctx.Info("update builder status successfully")
-	}
-}
-
-func (r *BuilderReconciler) isDoneOrFailed(builder *cloudapiv1alpha1.Builder) bool {
-	return builder.Status.Status == cloudapiv1alpha1.StatusDone || builder.Status.Status == cloudapiv1alpha1.StatusFailed
-}
-
-func (r *BuilderReconciler) getJob(ctx core.Context) (*batchv1.Job, error) {
-	job := new(batchv1.Job)
-	exist, err := ctx.GetResource(job)
-	if err != nil {
-		return nil, err
-	} else if !exist {
-		return nil, nil
-	}
-	return job, nil
-}
-
-func (r *BuilderReconciler) deleteJob(ctx core.Context) error {
-	// 1. delete job
-	job, err := r.getJob(ctx)
-	if err != nil {
-		ctx.Error(err, "get job when cleanup builder")
-		return errors.Wrap(err, "get job when cleanup builder")
-	}
-	if job != nil {
-		if err := r.Delete(ctx, job); err != nil {
-			ctx.Error(err, "delete job")
-			return errors.Wrap(err, "delete job")
-		}
-	}
-	return nil
+func (r *BuilderReconciler) createAndWatchJobV2(ctx *build.Context) error {
+	return core.CreateAndWatchJob(
+		ctx,
+		ctx.Builder,
+		func() (*batchv1.Job, error) {
+			return ctx.NewJob()
+		},
+		func() (bool, error) {
+			return ctx.CheckJobChanged()
+		},
+	)
 }

@@ -16,10 +16,10 @@ spec:
   scope: Namespaced
   versions:
   - additionalPrinterColumns:
-    - jsonPath: .status.status
+    - jsonPath: .status.base.status
       name: Status
       type: string
-    - jsonPath: .status.message
+    - jsonPath: .status.base.message
       name: Message
       type: string
     name: v1alpha1
@@ -123,14 +123,22 @@ spec:
           status:
             description: DeployerStatus defines the observed state of Deployer
             properties:
-              message:
-                description: Message is mainly used to store the error message when
-                  the CRD is failed.
-                type: string
-              status:
-                type: string
-            required:
-            - status
+              base:
+                properties:
+                  historyList:
+                    description: HistoryList is used to store the history of the CRD.
+                    items:
+                      type: string
+                    type: array
+                  message:
+                    description: Message is mainly used to store the error message
+                      when the CRD is failed.
+                    type: string
+                  status:
+                    type: string
+                required:
+                - status
+                type: object
             type: object
         required:
         - spec
