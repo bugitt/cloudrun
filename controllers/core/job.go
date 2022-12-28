@@ -17,53 +17,10 @@ limitations under the License.
 package core
 
 import (
-	"encoding/json"
-
 	"github.com/bugitt/cloudrun/types"
 	"github.com/pkg/errors"
 	batchv1 "k8s.io/api/batch/v1"
 )
-
-func CheckJobChanged[T types.CloudRunCRD](
-	ctx Context,
-	obj T,
-	isEqual func(T, T) bool,
-) (bool, error) {
-	historyList := obj.CommonStatus().HistoryList
-
-	if len(historyList) == 0 {
-		// new added
-		objBytes, err := json.Marshal(obj)
-		if err != nil {
-			return false, errors.Wrap(err, "failed to marshal the CRD")
-		}
-		obj.CommonStatus().HistoryList = (append(historyList, string(objBytes)))
-
-		if err := ctx.Status().Update(ctx, obj); err != nil {
-			return false, errors.Wrap(err, "failed to update the CRD string to historyList of status")
-		}
-		return false, nil
-	}
-
-	oldObjInterface, err := obj.GetDecoder()(historyList[len(historyList)-1])
-	if err != nil {
-		return false, err
-	}
-	oldObj := oldObjInterface.(T)
-
-	// compare the new and old spec
-	if isEqual(oldObj, obj) {
-		return false, nil
-	}
-
-	// not equal, need to update
-	newBuilderBytes, err := json.Marshal(obj)
-	if err != nil {
-		return true, errors.Wrap(err, "failed to marshal the builder spec")
-	}
-	obj.CommonStatus().HistoryList = (append(historyList, string(newBuilderBytes)))
-	return true, ctx.Status().Update(ctx, obj)
-}
 
 func CreateAndWatchJob[T types.CloudRunCRD](
 	ctx Context,

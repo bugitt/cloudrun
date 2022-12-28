@@ -194,7 +194,7 @@ func (ctx *Context) NewJob() (*batchv1.Job, error) {
 
 func (ctx *Context) CheckJobChanged() (bool, error) {
 	builder := ctx.Builder
-	return core.CheckJobChanged(
+	return core.CheckChanged(
 		ctx,
 		builder,
 		func(oldObj, newObj *cloudapiv1alpha1.Builder) bool {

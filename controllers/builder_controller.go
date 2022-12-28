@@ -99,7 +99,7 @@ func (r *BuilderReconciler) Reconcile(originalCtx context.Context, req ctrl.Requ
 	ctx.FixBuilder()
 
 	// create and exec image build job
-	if err := r.createAndWatchJobV2(ctx); err != nil {
+	if err := r.createAndWatchJob(ctx); err != nil {
 		ctx.Error(err, "Failed to setup builder job.")
 		err = errors.Wrap(err, "failed to setup builder job")
 		core.PublishStatus(ctx, builder, err)
@@ -134,7 +134,7 @@ func (r *BuilderReconciler) cleanup(ctx core.Context) error {
 	return nil
 }
 
-func (r *BuilderReconciler) createAndWatchJobV2(ctx *build.Context) error {
+func (r *BuilderReconciler) createAndWatchJob(ctx *build.Context) error {
 	return core.CreateAndWatchJob(
 		ctx,
 		ctx.Builder,
