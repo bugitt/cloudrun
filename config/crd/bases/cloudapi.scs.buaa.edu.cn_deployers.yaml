@@ -103,6 +103,9 @@ spec:
                   type: object
                 minItems: 1
                 type: array
+              round:
+                default: -1
+                type: integer
               type:
                 enum:
                 - job
@@ -110,6 +113,7 @@ spec:
                 type: string
             required:
             - containers
+            - round
             - type
             type: object
           status:
@@ -117,6 +121,8 @@ spec:
             properties:
               base:
                 properties:
+                  currentRound:
+                    type: integer
                   historyList:
                     description: HistoryList is used to store the history of the CRD.
                     items:
@@ -129,6 +135,7 @@ spec:
                   status:
                     type: string
                 required:
+                - currentRound
                 - status
                 type: object
             type: object

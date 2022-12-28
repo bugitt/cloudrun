@@ -34,6 +34,12 @@ func (ctx *Context) handleService() error {
 		return errors.Wrap(err, "failed to compare and update old deployer spec for service type")
 	}
 
+	if deployer.CommonStatus().CurrentRound < deployer.GetRound() {
+		deployer.CommonStatus().CurrentRound = deployer.GetRound()
+		core.PublishStatus(ctx, deployer, nil)
+		reCreate = true
+	}
+
 	if reCreate {
 		if err := ctx.deleteDeployment(); err != nil {
 			return errors.Wrap(err, "failed to cleanup the old service for service type")

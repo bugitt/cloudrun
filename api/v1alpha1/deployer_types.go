@@ -76,6 +76,8 @@ type DeployerSpec struct {
 	Type DeployType `json:"type"`
 	//+kubebuilder:validation:MinItems=1
 	Containers []ContainerSpec `json:"containers"`
+	//+kubebuilder:default:=-1
+	Round int `json:"round"`
 }
 
 // DeployerStatus defines the observed state of Deployer
@@ -128,4 +130,8 @@ func (d *Deployer) CommonStatus() *types.CommonStatus {
 	}
 	d.Status.Base = status
 	return status
+}
+
+func (d *Deployer) GetRound() int {
+	return d.Spec.Round
 }

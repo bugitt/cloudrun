@@ -112,15 +112,21 @@ spec:
               pushSecretName:
                 default: push-secret
                 type: string
+              round:
+                default: -1
+                type: integer
             required:
             - context
             - destination
+            - round
             type: object
           status:
             description: BuilderStatus defines the observed state of Builder
             properties:
               base:
                 properties:
+                  currentRound:
+                    type: integer
                   historyList:
                     description: HistoryList is used to store the history of the CRD.
                     items:
@@ -133,6 +139,7 @@ spec:
                   status:
                     type: string
                 required:
+                - currentRound
                 - status
                 type: object
             type: object

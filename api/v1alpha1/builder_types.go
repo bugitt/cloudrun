@@ -73,6 +73,8 @@ type BuilderSpec struct {
 	Destination    string `json:"destination"`
 	//+kubebuilder:default:=push-secret
 	PushSecretName string `json:"pushSecretName,omitempty"`
+	//+kubebuilder:default:=-1
+	Round int `json:"round"`
 }
 
 // BuilderStatus defines the observed state of Builder
@@ -123,4 +125,8 @@ func (b *Builder) CommonStatus() *types.CommonStatus {
 		b.Status.Base = &types.CommonStatus{}
 	}
 	return b.Status.Base
+}
+
+func (b *Builder) GetRound() int {
+	return b.Spec.Round
 }

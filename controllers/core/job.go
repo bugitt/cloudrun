@@ -34,6 +34,12 @@ func CreateAndWatchJob[T types.CloudRunCRD](
 		return errors.Wrap(err, "failed to compare and update old job spec")
 	}
 
+	if obj.CommonStatus().CurrentRound < obj.GetRound() {
+		obj.CommonStatus().CurrentRound = obj.GetRound()
+		PublishStatus(ctx, obj, nil)
+		reCreateJob = true
+	}
+
 	if reCreateJob {
 		if err := DeleteJob(ctx); err != nil {
 			return errors.Wrap(err, "failed to cleanup the old job")

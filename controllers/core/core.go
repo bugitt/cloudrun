@@ -56,10 +56,10 @@ func CheckChanged[T types.CloudRunCRD](
 	}
 
 	// not equal, need to update
-	newBuilderBytes, err := json.Marshal(obj)
+	newObjBytes, err := json.Marshal(obj)
 	if err != nil {
 		return true, errors.Wrap(err, "failed to marshal the builder spec")
 	}
-	obj.CommonStatus().HistoryList = (append(historyList, string(newBuilderBytes)))
+	obj.CommonStatus().HistoryList = (append(historyList, string(newObjBytes)))
 	return true, ctx.Status().Update(ctx, obj)
 }

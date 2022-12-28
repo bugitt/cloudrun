@@ -24,5 +24,6 @@ type CloudRunCRD interface {
 	client.Object
 
 	GetDecoder() DecodeFunc
+	GetRound() int
 	CommonStatus() *CommonStatus
 }
