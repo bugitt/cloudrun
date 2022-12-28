@@ -100,10 +100,7 @@ func (ctx *Context) createOrUpdateService() error {
 
 	if !exist {
 		service = &corev1.Service{
-			ObjectMeta: apimetav1.ObjectMeta{
-				Name:      ctx.Name(),
-				Namespace: ctx.Namespace(),
-			},
+			ObjectMeta: ctx.NewObjectMeta(),
 			Spec: corev1.ServiceSpec{
 				Selector: ctx.GetServiceLabels(),
 				Ports:    make([]corev1.ServicePort, 0),
@@ -154,10 +151,7 @@ func (ctx *Context) createOrUpdateService() error {
 
 func (ctx *Context) createDeployment() error {
 	deployment := &appsv1.Deployment{
-		ObjectMeta: apimetav1.ObjectMeta{
-			Name:      ctx.Name(),
-			Namespace: ctx.Namespace(),
-		},
+		ObjectMeta: ctx.NewObjectMeta(),
 		Spec: appsv1.DeploymentSpec{
 			Replicas: core.Ptr[int32](1),
 			Selector: &apimetav1.LabelSelector{

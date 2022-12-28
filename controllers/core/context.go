@@ -41,6 +41,9 @@ type Context interface {
 	Name() string
 	Namespace() string
 	NamespacedName() ktypes.NamespacedName
+	NewObjectMeta() apimetav1.ObjectMeta
+
+	GetServiceLabels() map[string]string
 
 	CreateResource(obj client.Object, force bool) error
 	GetResource(obj client.Object) (bool, error)
@@ -146,4 +149,26 @@ func (ctx *DefaultContext) GetResource(obj client.Object) (bool, error) {
 		return false, nil
 	}
 	return true, nil
+}
+
+func (ctx *DefaultContext) GetServiceLabels() map[string]string {
+	return map[string]string{
+		"app": ctx.Name(),
+	}
+}
+
+func (ctx *DefaultContext) NewObjectMeta() apimetav1.ObjectMeta {
+	ownerRefList := []apimetav1.OwnerReference{}
+	if ownerRef, err := ctx.GetOwnerReferences(); err != nil {
+		ctx.Error(err, "failed get owner reference")
+	} else {
+		ownerRefList = append(ownerRefList, ownerRef)
+	}
+
+	return apimetav1.ObjectMeta{
+		Name:            ctx.Name(),
+		Namespace:       ctx.Namespace(),
+		Labels:          ctx.GetServiceLabels(),
+		OwnerReferences: ownerRefList,
+	}
 }

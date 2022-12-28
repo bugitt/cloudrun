@@ -29,7 +29,6 @@ import (
 	batchv1 "k8s.io/api/batch/v1"
 	apiv1 "k8s.io/api/core/v1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ktypes "k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -174,17 +173,11 @@ func (ctx *Context) NewJob() (*batchv1.Job, error) {
 		}
 	}
 	job := &batchv1.Job{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      builder.Name,
-			Namespace: builder.Namespace,
-		},
+		ObjectMeta: ctx.NewObjectMeta(),
 		Spec: batchv1.JobSpec{
 			Template: apiv1.PodTemplateSpec{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      ctx.Name(),
-					Namespace: ctx.Namespace(),
-				},
-				Spec: podSpec,
+				ObjectMeta: ctx.NewObjectMeta(),
+				Spec:       podSpec,
 			},
 			BackoffLimit: &backoffLimit,
 		},

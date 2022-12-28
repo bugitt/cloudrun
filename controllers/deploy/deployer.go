@@ -29,7 +29,6 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ktypes "k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -58,12 +57,6 @@ func NewContext(originCtx context.Context, cli client.Client, logger logr.Logger
 	return &Context{
 		Context:  defaultCtx,
 		Deployer: deployer,
-	}
-}
-
-func (ctx *Context) GetServiceLabels() map[string]string {
-	return map[string]string{
-		"app": ctx.Name(),
 	}
 }
 
@@ -106,10 +99,7 @@ func (ctx *Context) handleJob() error {
 
 func (ctx *Context) newJob() *batchv1.Job {
 	return &batchv1.Job{
-		ObjectMeta: apimetav1.ObjectMeta{
-			Name:      ctx.Name(),
-			Namespace: ctx.Namespace(),
-		},
+		ObjectMeta: ctx.NewObjectMeta(),
 		Spec: batchv1.JobSpec{
 			Template: ctx.newPodSpec(),
 		},
@@ -158,11 +148,7 @@ func (ctx *Context) newPodSpec() apiv1.PodTemplateSpec {
 	}
 
 	return apiv1.PodTemplateSpec{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      ctx.Name(),
-			Namespace: ctx.Namespace(),
-			Labels:    ctx.GetServiceLabels(),
-		},
+		ObjectMeta: ctx.NewObjectMeta(),
 		Spec: apiv1.PodSpec{
 			InitContainers: initContainers,
 			Containers:     containers,
