@@ -24,12 +24,12 @@ import (
 
 	"github.com/bugitt/cloudrun/api/v1alpha1"
 	"github.com/bugitt/cloudrun/controllers/core"
+	"github.com/bugitt/cloudrun/types"
 	"github.com/go-logr/logr"
 	batchv1 "k8s.io/api/batch/v1"
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	ktypes "k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -50,7 +50,7 @@ func NewContext(originCtx context.Context, cli client.Client, logger logr.Logger
 		Context:            originCtx,
 		Client:             cli,
 		Logger:             logger,
-		NamespacedNameVar:  ktypes.NamespacedName{Namespace: deployer.Namespace, Name: deployer.Name},
+		NamespacedNameVar:  types.NamespacedName{Namespace: deployer.Namespace, Name: deployer.Name},
 		GetMasterResource:  func() (client.Object, error) { return deployer, nil },
 		GetOwnerReferences: func() (apimetav1.OwnerReference, error) { return ownerReference, nil },
 	}

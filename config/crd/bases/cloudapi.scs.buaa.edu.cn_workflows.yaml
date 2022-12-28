@@ -35,13 +35,60 @@ spec:
           spec:
             description: WorkflowSpec defines the desired state of Workflow
             properties:
-              foo:
-                description: Foo is an example field of Workflow. Edit workflow_types.go
-                  to remove/update
-                type: string
+              builderList:
+                items:
+                  properties:
+                    name:
+                      type: string
+                    namespace:
+                      type: string
+                  required:
+                  - name
+                  - namespace
+                  type: object
+                type: array
+              deployerList:
+                items:
+                  properties:
+                    name:
+                      type: string
+                    namespace:
+                      type: string
+                  required:
+                  - name
+                  - namespace
+                  type: object
+                type: array
+              round:
+                default: -1
+                type: integer
+            required:
+            - builderList
+            - deployerList
+            - round
             type: object
           status:
             description: WorkflowStatus defines the observed state of Workflow
+            properties:
+              base:
+                properties:
+                  currentRound:
+                    type: integer
+                  historyList:
+                    description: HistoryList is used to store the history of the CRD.
+                    items:
+                      type: string
+                    type: array
+                  message:
+                    description: Message is mainly used to store the error message
+                      when the CRD is failed.
+                    type: string
+                  status:
+                    type: string
+                required:
+                - currentRound
+                - status
+                type: object
             type: object
         type: object
     served: true

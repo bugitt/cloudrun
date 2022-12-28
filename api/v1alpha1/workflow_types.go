@@ -17,25 +17,36 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"github.com/bugitt/cloudrun/types"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
+type WorkflowStage string
+
+const (
+	// WorkflowStagePending means the application is pending to be deployed.
+	WorkflowStagePending WorkflowStage = "Pending"
+	// ApplicationStageBuilding means the application is being built.
+	WorkflowStageBuilding WorkflowStage = "Building"
+	// WorkflowStageDeploying means the application is being deployed.
+	// If the application is a job, this stage means the job is running.
+	WorkflowStageDeploying WorkflowStage = "Deploying"
+	// WorkflowStageServing means the application is serving.
+	// If the application is a job, this stage means the job has finished.
+	WorkflowStageServing WorkflowStage = "Serving"
+)
 
 // WorkflowSpec defines the desired state of Workflow
 type WorkflowSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-
-	// Foo is an example field of Workflow. Edit workflow_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
+	//+kubebuilder:default=-1
+	Round        int                    `json:"round"`
+	BuilderList  []types.NamespacedName `json:"builderList"`
+	DeployerList []types.NamespacedName `json:"deployerList"`
 }
 
 // WorkflowStatus defines the observed state of Workflow
 type WorkflowStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	Base *types.CommonStatus `json:"base,omitempty"`
 }
 
 //+kubebuilder:object:root=true

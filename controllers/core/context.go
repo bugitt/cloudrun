@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/bugitt/cloudrun/types"
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -40,7 +41,7 @@ type Context interface {
 
 	Name() string
 	Namespace() string
-	NamespacedName() ktypes.NamespacedName
+	NamespacedName() types.NamespacedName
 	NewObjectMeta() apimetav1.ObjectMeta
 
 	GetServiceLabels() map[string]string
@@ -54,7 +55,7 @@ type DefaultContext struct {
 	client.Client
 	logr.Logger
 
-	NamespacedNameVar ktypes.NamespacedName
+	NamespacedNameVar types.NamespacedName
 
 	GetMasterResource  func() (client.Object, error)
 	GetOwnerReferences func() (apimetav1.OwnerReference, error)
@@ -68,7 +69,7 @@ func (ctx *DefaultContext) Namespace() string {
 	return ctx.NamespacedNameVar.Namespace
 }
 
-func (ctx *DefaultContext) NamespacedName() ktypes.NamespacedName {
+func (ctx *DefaultContext) NamespacedName() types.NamespacedName {
 	return ctx.NamespacedNameVar
 }
 
@@ -141,7 +142,7 @@ func (ctx *DefaultContext) CreateResource(obj client.Object, force bool) error {
 }
 
 func (ctx *DefaultContext) GetResource(obj client.Object) (bool, error) {
-	if err := ctx.Get(ctx, ctx.NamespacedNameVar, obj); err != nil {
+	if err := ctx.Get(ctx, ktypes.NamespacedName{Namespace: ctx.Namespace(), Name: ctx.Name()}, obj); err != nil {
 		if client.IgnoreNotFound(err) != nil {
 			ctx.Error(err, fmt.Sprintf("Failed to get %s %s/%s", obj.GetObjectKind().GroupVersionKind().Kind, obj.GetNamespace(), obj.GetName()))
 			return false, errors.Wrap(err, fmt.Sprintf("failed to get %s %s/%s", obj.GetObjectKind().GroupVersionKind().Kind, obj.GetNamespace(), obj.GetName()))

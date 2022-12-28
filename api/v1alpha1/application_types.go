@@ -17,23 +17,7 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"github.com/bugitt/cloudrun/types"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-)
-
-type ApplicationStage string
-
-const (
-	// ApplicationStagePending means the application is pending to be deployed.
-	ApplicationStagePending ApplicationStage = "Pending"
-	// ApplicationStageBuilding means the application is being built.
-	ApplicationStageBuilding ApplicationStage = "Building"
-	// ApplicationStageDeploying means the application is being deployed.
-	// If the application is a job, this stage means the job is running.
-	ApplicationStageDeploying ApplicationStage = "Deploying"
-	// ApplicationStageServing means the application is serving.
-	// If the application is a job, this stage means the job has finished.
-	ApplicationStageServing ApplicationStage = "Serving"
 )
 
 // ApplicationSpec defines the desired state of Application
@@ -43,8 +27,6 @@ type ApplicationSpec struct {
 
 // ApplicationStatus defines the observed state of Application
 type ApplicationStatus struct {
-	Stage ApplicationStage    `json:"stage"`
-	Base  *types.CommonStatus `json:",inline"`
 }
 
 //+kubebuilder:object:root=true
@@ -70,13 +52,4 @@ type ApplicationList struct {
 
 func init() {
 	SchemeBuilder.Register(&Application{}, &ApplicationList{})
-}
-
-func (a *Application) CommonStatus() *types.CommonStatus {
-	status := a.Status.Base
-	if status == nil {
-		status = &types.CommonStatus{}
-	}
-	a.Status.Base = status
-	return status
 }
