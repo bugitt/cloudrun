@@ -54,17 +54,9 @@ spec:
                         type: string
                       type: array
                     env:
-                      items:
-                        properties:
-                          name:
-                            type: string
-                          value:
-                            type: string
-                        required:
-                        - name
-                        - value
-                        type: object
-                      type: array
+                      additionalProperties:
+                        type: string
+                      type: object
                     image:
                       type: string
                     initial:
@@ -72,7 +64,7 @@ spec:
                       type: boolean
                     name:
                       type: string
-                    port:
+                    ports:
                       items:
                         properties:
                           export:
@@ -111,14 +103,14 @@ spec:
                   type: object
                 minItems: 1
                 type: array
-              deployType:
+              type:
                 enum:
                 - job
                 - service
                 type: string
             required:
             - containers
-            - deployType
+            - type
             type: object
           status:
             description: DeployerStatus defines the observed state of Deployer

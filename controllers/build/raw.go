@@ -41,7 +41,7 @@ func (ctx *Context) addRawDockerfileInitContainers(dockerfile string, podSpec *a
 			Name:      dockerfileConfigmapName(ctx),
 			Namespace: ctx.Namespace(),
 		},
-		Immutable: core.BoolPtr(true),
+		Immutable: core.Ptr(true),
 		Data: map[string]string{
 			dockerfilePath: dockerfile,
 		},

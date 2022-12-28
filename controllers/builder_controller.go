@@ -103,7 +103,7 @@ func (r *BuilderReconciler) Reconcile(originalCtx context.Context, req ctrl.Requ
 		ctx.Error(err, "Failed to setup builder job.")
 		err = errors.Wrap(err, "failed to setup builder job")
 		core.PublishStatus(ctx, builder, err)
-		return ctrl.Result{}, err
+		return ctrl.Result{}, nil
 	}
 
 	core.PublishStatus(ctx, builder, nil)
@@ -144,5 +144,6 @@ func (r *BuilderReconciler) createAndWatchJob(ctx *build.Context) error {
 		func() (bool, error) {
 			return ctx.CheckJobChanged()
 		},
+		true,
 	)
 }

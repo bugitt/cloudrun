@@ -9,4 +9,18 @@ metadata:
     app.kubernetes.io/created-by: cloudrun
   name: deployer-sample
 spec:
-  # TODO(user): Add fields here
+  type: service
+  containers:
+    - image: nginx:1.20
+      initial: false
+      name: container-1
+      ports:
+        - port: 80
+          protocol: tcp
+          export: true
+        - port: 8080
+          protocol: tcp
+          export: true
+      resource:
+        cpu: 100
+        memory: 100

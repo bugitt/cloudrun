@@ -27,6 +27,7 @@ func CreateAndWatchJob[T types.CloudRunCRD](
 	obj T,
 	newJob func() (*batchv1.Job, error),
 	checkJobChanged func() (bool, error),
+	deleteJobAfterDone bool,
 ) error {
 	reCreateJob, err := checkJobChanged()
 	if err != nil {
@@ -41,7 +42,7 @@ func CreateAndWatchJob[T types.CloudRunCRD](
 		return nil
 	}
 
-	if IsDoneOrFailed(obj) {
+	if IsDoneOrFailed(obj) && deleteJobAfterDone {
 		return DeleteJob(ctx)
 	}
 
@@ -75,7 +76,7 @@ func CreateAndWatchJob[T types.CloudRunCRD](
 	obj.CommonStatus().Status = status
 	obj.CommonStatus().Message = message
 
-	if IsDoneOrFailed(obj) {
+	if IsDoneOrFailed(obj) && deleteJobAfterDone {
 		if err := DeleteJob(ctx); err != nil {
 			return errors.Wrap(err, "failed to cleanup the old job")
 		}

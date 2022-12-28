@@ -77,7 +77,7 @@ func NewContext(originCtx context.Context, cli client.Client, logger logr.Logger
 		Kind:               builder.Kind,
 		Name:               builder.Name,
 		UID:                builder.GetUID(),
-		BlockOwnerDeletion: core.BoolPtr(true),
+		BlockOwnerDeletion: core.Ptr(true),
 	}
 	defaultCtx := &core.DefaultContext{
 		Context:            originCtx,
@@ -181,8 +181,8 @@ func (ctx *Context) NewJob() (*batchv1.Job, error) {
 		Spec: batchv1.JobSpec{
 			Template: apiv1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      builder.Name,
-					Namespace: builder.Namespace,
+					Name:      ctx.Name(),
+					Namespace: ctx.Namespace(),
 				},
 				Spec: podSpec,
 			},

@@ -18,7 +18,7 @@ package core
 
 import "github.com/bugitt/cloudrun/types"
 
-func BoolPtr(b bool) *bool {
+func Ptr[T any](b T) *T {
 	return &b
 }
 

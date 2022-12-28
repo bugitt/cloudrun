@@ -22,7 +22,6 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"github.com/bugitt/cloudrun/types"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -106,8 +105,7 @@ func (in *ApplicationStatus) DeepCopyInto(out *ApplicationStatus) {
 	*out = *in
 	if in.Base != nil {
 		in, out := &in.Base, &out.Base
-		*out = new(types.CommonStatus)
-		(*in).DeepCopyInto(*out)
+		*out = (*in).DeepCopy()
 	}
 }
 
@@ -276,8 +274,7 @@ func (in *BuilderStatus) DeepCopyInto(out *BuilderStatus) {
 	*out = *in
 	if in.Base != nil {
 		in, out := &in.Base, &out.Base
-		*out = new(types.CommonStatus)
-		(*in).DeepCopyInto(*out)
+		*out = (*in).DeepCopy()
 	}
 }
 
@@ -322,8 +319,10 @@ func (in *ContainerSpec) DeepCopyInto(out *ContainerSpec) {
 	}
 	if in.Envs != nil {
 		in, out := &in.Envs, &out.Envs
-		*out = make([]Env, len(*in))
-		copy(*out, *in)
+		*out = make(map[string]string, len(*in))
+		for key, val := range *in {
+			(*out)[key] = val
+		}
 	}
 	if in.Ports != nil {
 		in, out := &in.Ports, &out.Ports
@@ -428,8 +427,7 @@ func (in *DeployerStatus) DeepCopyInto(out *DeployerStatus) {
 	*out = *in
 	if in.Base != nil {
 		in, out := &in.Base, &out.Base
-		*out = new(types.CommonStatus)
-		(*in).DeepCopyInto(*out)
+		*out = (*in).DeepCopy()
 	}
 }
 

@@ -18,6 +18,7 @@ package controllers
 
 import (
 	"context"
+	"time"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -25,6 +26,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	cloudapiv1alpha1 "github.com/bugitt/cloudrun/api/v1alpha1"
+	"github.com/bugitt/cloudrun/controllers/core"
 	"github.com/bugitt/cloudrun/controllers/deploy"
 	"github.com/bugitt/cloudrun/controllers/finalize"
 	"github.com/pkg/errors"
@@ -97,17 +99,26 @@ func (r *DeployerReconciler) Reconcile(originalCtx context.Context, req ctrl.Req
 		}
 	}
 
+	if err := ctx.Handle(); err != nil {
+		ctx.Error(err, "Failed to handle deployer")
+		err = errors.Wrap(err, "failed to handle deployer")
+		core.PublishStatus(ctx, deployer, err)
+		return ctrl.Result{}, nil
+	}
+
+	core.PublishStatus(ctx, deployer, nil)
+
+	if !core.IsDoneOrFailed(deployer) {
+		return ctrl.Result{RequeueAfter: 5 * time.Second}, nil
+	}
+
+	ctx.Info("Deployer is done or failed. Ignoring.")
+
 	return ctrl.Result{}, nil
 }
 
 func (r *DeployerReconciler) finalizeDeployer(ctx *deploy.Context) error {
 	ctx.Info("Start to finalize Deployer")
-	// TODO add your finalizer logic here
-	return nil
-}
-
-func (r *DeployerReconciler) handleJob(ctx *deploy.Context) error {
-	ctx.Info("Start to handle job")
 	return nil
 }
 
