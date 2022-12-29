@@ -77,7 +77,7 @@ type DeployerSpec struct {
 	//+kubebuilder:validation:MinItems=1
 	Containers []ContainerSpec `json:"containers"`
 	//+kubebuilder:default:=-1
-	Round int `json:"round"`
+	Round int `json:"round,omitempty"`
 }
 
 // DeployerStatus defines the observed state of Deployer

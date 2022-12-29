@@ -74,7 +74,7 @@ type BuilderSpec struct {
 	//+kubebuilder:default:=push-secret
 	PushSecretName string `json:"pushSecretName,omitempty"`
 	//+kubebuilder:default:=-1
-	Round int `json:"round"`
+	Round int `json:"round,omitempty"`
 }
 
 // BuilderStatus defines the observed state of Builder
