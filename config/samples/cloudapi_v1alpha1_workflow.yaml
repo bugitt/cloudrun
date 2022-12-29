@@ -9,4 +9,10 @@ metadata:
     app.kubernetes.io/created-by: cloudrun
   name: workflow-sample
 spec:
-  # TODO(user): Add fields here
+  round: 1
+  builderList:
+    - name: builder-sample
+      namespace: default
+  deployerList:
+    - name: deployer-sample
+      namespace: default

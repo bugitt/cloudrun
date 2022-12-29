@@ -15,7 +15,20 @@ spec:
     singular: workflow
   scope: Namespaced
   versions:
-  - name: v1alpha1
+  - additionalPrinterColumns:
+    - jsonPath: .spec.round
+      name: Round
+      type: string
+    - jsonPath: .status.base.currentRound
+      name: CurrentRound
+      type: string
+    - jsonPath: .status.base.status
+      name: Status
+      type: string
+    - jsonPath: .status.base.message
+      name: Message
+      type: string
+    name: v1alpha1
     schema:
       openAPIV3Schema:
         description: Workflow is the Schema for the workflows API
@@ -89,6 +102,8 @@ spec:
                 - currentRound
                 - status
                 type: object
+              stage:
+                type: string
             type: object
         type: object
     served: true

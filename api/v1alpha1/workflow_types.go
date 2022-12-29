@@ -46,9 +46,14 @@ type WorkflowSpec struct {
 
 // WorkflowStatus defines the observed state of Workflow
 type WorkflowStatus struct {
-	Base *types.CommonStatus `json:"base,omitempty"`
+	Stage WorkflowStage       `json:"stage,omitempty"`
+	Base  *types.CommonStatus `json:"base,omitempty"`
 }
 
+//+kubebuilder:printcolumn:name="Round",type="string",JSONPath=`.spec.round`
+//+kubebuilder:printcolumn:name="CurrentRound",type="string",JSONPath=`.status.base.currentRound`
+//+kubebuilder:printcolumn:name="Status",type="string",JSONPath=`.status.base.status`
+//+kubebuilder:printcolumn:name="Message",type="string",JSONPath=`.status.base.message`
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
 

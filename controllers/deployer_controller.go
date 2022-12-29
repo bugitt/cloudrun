@@ -102,9 +102,8 @@ func (r *DeployerReconciler) Reconcile(originalCtx context.Context, req ctrl.Req
 
 	if deployer.Spec.Round == -1 {
 		ctx.Info("Deployer is not ready. Ignoring.")
-		deployer.Status.Base.Status = types.StatusUNDO
-		core.PublishStatus(ctx, deployer, nil)
-		return ctrl.Result{}, nil
+		deployer.CommonStatus().Status = types.StatusUNDO
+		return ctrl.Result{}, r.Status().Update(ctx, deployer)
 	}
 
 	if err := ctx.Handle(); err != nil {

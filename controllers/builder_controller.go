@@ -99,9 +99,8 @@ func (r *BuilderReconciler) Reconcile(originalCtx context.Context, req ctrl.Requ
 
 	if builder.Spec.Round == -1 {
 		ctx.Info("Builder is not ready. Ignoring.")
-		builder.Status.Base.Status = types.StatusUNDO
-		core.PublishStatus(ctx, builder, nil)
-		return ctrl.Result{}, nil
+		builder.CommonStatus().Status = types.StatusUNDO
+		return ctrl.Result{}, r.Status().Update(originalCtx, builder)
 	}
 
 	ctx.FixBuilder()

@@ -84,6 +84,8 @@ type BuilderStatus struct {
 
 //+kubebuilder:object:root=true
 //+kubebuilder:printcolumn:name="Target",type="string",JSONPath=`.spec.destination`
+//+kubebuilder:printcolumn:name="Round",type="string",JSONPath=`.spec.round`
+//+kubebuilder:printcolumn:name="CurrentRound",type="string",JSONPath=`.status.base.currentRound`
 //+kubebuilder:printcolumn:name="Status",type="string",JSONPath=`.status.base.status`
 //+kubebuilder:printcolumn:name="Message",type="string",JSONPath=`.status.base.message`
 //+kubebuilder:subresource:status

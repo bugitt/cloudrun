@@ -19,6 +19,12 @@ spec:
     - jsonPath: .spec.destination
       name: Target
       type: string
+    - jsonPath: .spec.round
+      name: Round
+      type: string
+    - jsonPath: .status.base.currentRound
+      name: CurrentRound
+      type: string
     - jsonPath: .status.base.status
       name: Status
       type: string

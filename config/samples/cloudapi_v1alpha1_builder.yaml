@@ -8,5 +8,13 @@ metadata:
     app.kubernetes.io/managed-by: kustomize
     app.kubernetes.io/created-by: cloudrun
   name: builder-sample
+  namespace: default
 spec:
-  # TODO(user): Add fields here
+  context:
+   raw: |
+    FROM alpine:3.12
+    CMD ["echo", "hello world"]
+  dockerfilePath: Dockerfile
+  destination: "docker.io/loheagn/cloudrun-test-image-builder:raw-8"
+  pushSecretName: push-secret
+
