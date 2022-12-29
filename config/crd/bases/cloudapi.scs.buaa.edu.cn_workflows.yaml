@@ -22,6 +22,9 @@ spec:
     - jsonPath: .status.base.currentRound
       name: CurrentRound
       type: string
+    - jsonPath: .status.stage
+      name: Stage
+      type: string
     - jsonPath: .status.base.status
       name: Status
       type: string
@@ -78,7 +81,6 @@ spec:
             required:
             - builderList
             - deployerList
-            - round
             type: object
           status:
             description: WorkflowStatus defines the observed state of Workflow

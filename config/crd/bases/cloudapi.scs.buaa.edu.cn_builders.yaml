@@ -124,7 +124,6 @@ spec:
             required:
             - context
             - destination
-            - round
             type: object
           status:
             description: BuilderStatus defines the observed state of Builder
