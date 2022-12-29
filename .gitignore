@@ -29,3 +29,5 @@ Dockerfile.cross
 .DS_Store
 
 config/samples/secret_samples/
+
+manager
