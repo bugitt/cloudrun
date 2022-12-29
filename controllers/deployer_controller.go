@@ -29,6 +29,7 @@ import (
 	"github.com/bugitt/cloudrun/controllers/core"
 	"github.com/bugitt/cloudrun/controllers/deploy"
 	"github.com/bugitt/cloudrun/controllers/finalize"
+	"github.com/bugitt/cloudrun/types"
 	"github.com/pkg/errors"
 )
 
@@ -101,6 +102,8 @@ func (r *DeployerReconciler) Reconcile(originalCtx context.Context, req ctrl.Req
 
 	if deployer.Spec.Round == -1 {
 		ctx.Info("Deployer is not ready. Ignoring.")
+		deployer.Status.Base.Status = types.StatusUNDO
+		core.PublishStatus(ctx, deployer, nil)
 		return ctrl.Result{}, nil
 	}
 

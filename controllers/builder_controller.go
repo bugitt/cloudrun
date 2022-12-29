@@ -31,6 +31,7 @@ import (
 	"github.com/bugitt/cloudrun/controllers/build"
 	"github.com/bugitt/cloudrun/controllers/core"
 	"github.com/bugitt/cloudrun/controllers/finalize"
+	"github.com/bugitt/cloudrun/types"
 )
 
 // BuilderReconciler reconciles a Builder object
@@ -94,6 +95,13 @@ func (r *BuilderReconciler) Reconcile(originalCtx context.Context, req ctrl.Requ
 			ctx.Error(err, "Failed to update Builder after add finalizer")
 			return ctrl.Result{}, errors.Wrap(err, "failed to update builder")
 		}
+	}
+
+	if builder.Spec.Round == -1 {
+		ctx.Info("Builder is not ready. Ignoring.")
+		builder.Status.Base.Status = types.StatusUNDO
+		core.PublishStatus(ctx, builder, nil)
+		return ctrl.Result{}, nil
 	}
 
 	ctx.FixBuilder()

@@ -18,6 +18,8 @@ package types
 type Status string
 
 const (
+	//StatusUNDO means the CRD is not deployed.
+	StatusUNDO Status = "UNDO"
 	// StatusPending means the CRD is pending to be deployed.
 	StatusPending Status = "Pending"
 	// StatusDoing means the CRD is being deployed.
