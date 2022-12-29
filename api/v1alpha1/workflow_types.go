@@ -52,6 +52,7 @@ type WorkflowStatus struct {
 
 //+kubebuilder:printcolumn:name="Round",type="string",JSONPath=`.spec.round`
 //+kubebuilder:printcolumn:name="CurrentRound",type="string",JSONPath=`.status.base.currentRound`
+//+kubebuilder:printcolumn:name="Stage",type="string",JSONPath=`.status.stage`
 //+kubebuilder:printcolumn:name="Status",type="string",JSONPath=`.status.base.status`
 //+kubebuilder:printcolumn:name="Message",type="string",JSONPath=`.status.base.message`
 //+kubebuilder:object:root=true
