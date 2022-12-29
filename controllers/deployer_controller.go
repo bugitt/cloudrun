@@ -50,7 +50,7 @@ type DeployerReconciler struct {
 //+kubebuilder:rbac:groups=apps,resources=deployments/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=batch,resources=jobs,verbs=get;list;watch;create;delete
 //+kubebuilder:rbac:groups=batch,resources=jobs/status,verbs=get;update;patch
-//+kubebuilder:rbac:groups=core,resources=services,verbs=get;list;watch;create;delete
+//+kubebuilder:rbac:groups=core,resources=services,verbs=get;list;watch;create;delete;update;patch
 //+kubebuilder:rbac:groups=core,resources=services/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=core,resources=configmaps,verbs=get;list;watch;create;delete
 //+kubebuilder:rbac:groups=core,resources=configmaps/status,verbs=get;update;patch
