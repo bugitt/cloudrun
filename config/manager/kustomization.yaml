@@ -5,4 +5,4 @@ kind: Kustomization
 images:
 - name: controller
   newName: scs.buaa.edu.cn:8081/iobs/cloudrun
-  newTag: 924926a-dirty
+  newTag: caf8adf-dirty
