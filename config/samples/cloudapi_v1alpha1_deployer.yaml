@@ -9,7 +9,7 @@ metadata:
     app.kubernetes.io/created-by: cloudrun
   name: deployer-sample
 spec:
-  round: 2
+  round: 3
   type: service
   containers:
     - image: nginx:1.20
@@ -22,6 +22,8 @@ spec:
         - port: 8080
           protocol: tcp
           export: true
+      env:
+        somekey: somevalue
       resource:
         cpu: 100
         memory: 100

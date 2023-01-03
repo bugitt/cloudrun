@@ -63,7 +63,7 @@ type Workflow struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   WorkflowSpec   `json:"spec,omitempty"`
+	Spec   WorkflowSpec   `json:"spec"`
 	Status WorkflowStatus `json:"status,omitempty"`
 }
 

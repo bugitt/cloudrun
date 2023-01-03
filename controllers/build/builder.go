@@ -147,7 +147,7 @@ func (ctx *Context) NewJob() (*batchv1.Job, error) {
 		Image: kanikoImageName,
 		Args: []string{
 			"--dockerfile=" + builder.Spec.DockerfilePath,
-			"--context=dir:///workspace",
+			"--context=dir://" + filepath.Join("/workspace", builder.Spec.WorkspacePath),
 			"--destination=" + builder.Spec.Destination,
 		},
 		VolumeMounts: []apiv1.VolumeMount{workspaceMount(), pushSecretVolumeMount},
