@@ -50,13 +50,8 @@ type BuilderContextS3 struct {
 }
 
 type BuildContextGit struct {
-	//+kubebuilder:validation:Enum=http;https
-	//+kubebuilder:default:=https
-	Scheme           string  `json:"scheme,omitempty"`
-	EndpointWithPath string  `json:"endpoint"`
-	Username         *string `json:"username,omitempty"`
-	UserPassword     *string `json:"userPassword,omitempty"`
-	Ref              *string `json:"ref,omitempty"`
+	URLWithAuth string  `json:"urlWithAuth"`
+	Ref         *string `json:"ref,omitempty"`
 }
 
 type BuilderContext struct {

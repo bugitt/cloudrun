@@ -42,22 +42,12 @@ spec:
                     properties:
                       git:
                         properties:
-                          endpoint:
-                            type: string
                           ref:
                             type: string
-                          scheme:
-                            default: https
-                            enum:
-                            - http
-                            - https
-                            type: string
-                          userPassword:
-                            type: string
-                          username:
+                          urlWithAuth:
                             type: string
                         required:
-                        - endpoint
+                        - urlWithAuth
                         type: object
                       raw:
                         type: string

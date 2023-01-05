@@ -18,7 +18,7 @@ package build
 
 import (
 	"fmt"
-	"strings"
+	"net/url"
 
 	"github.com/pkg/errors"
 	apiv1 "k8s.io/api/core/v1"
@@ -26,32 +26,12 @@ import (
 	cloudapiv1alpha1 "github.com/bugitt/cloudrun/api/v1alpha1"
 )
 
-func gitURL(cfg *cloudapiv1alpha1.BuildContextGit) (string, error) {
-	prefixList := []string{"http://", "https://"}
-	for _, prefix := range prefixList {
-		cfg.EndpointWithPath = strings.TrimPrefix(cfg.EndpointWithPath, prefix)
-	}
-	if cfg.UserPassword != nil && cfg.Username == nil {
-		return fmt.Sprintf("%s://%s@%s", cfg.Scheme, *cfg.UserPassword, cfg.EndpointWithPath), nil
-	}
-	if cfg.UserPassword != nil && cfg.Username != nil {
-		return fmt.Sprintf("%s://%s:%s@%s", cfg.Scheme, *cfg.Username, *cfg.UserPassword, cfg.EndpointWithPath), nil
-	}
-	if cfg.UserPassword == nil && cfg.Username != nil {
-		return "", errors.New("username is set but password is not set when parse git url")
-	}
-	if cfg.UserPassword == nil && cfg.Username == nil {
-		return fmt.Sprintf("%s://%s", cfg.Scheme, cfg.EndpointWithPath), nil
-	}
-	return "", errors.New("unexpected error when parse git url")
-}
-
 func gitCommand(cfg *cloudapiv1alpha1.BuildContextGit) (string, error) {
-	url, err := gitURL(cfg)
+	_, err := url.Parse(cfg.URLWithAuth)
 	if err != nil {
-		return "", err
+		return "", errors.Wrap(err, "failed to parse the git url")
 	}
-	gitCloneCmd := fmt.Sprintf("git clone %s %s", url, workspaceVolumeMountPath)
+	gitCloneCmd := fmt.Sprintf("git clone %s %s", cfg.URLWithAuth, workspaceVolumeMountPath)
 	if cfg.Ref == nil {
 		return gitCloneCmd, nil
 	}
