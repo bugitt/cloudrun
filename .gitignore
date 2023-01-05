@@ -31,3 +31,5 @@ Dockerfile.cross
 config/samples/secret_samples/
 
 manager
+
+config/manager/kustomization.yaml
