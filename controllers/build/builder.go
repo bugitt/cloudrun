@@ -167,12 +167,14 @@ func (ctx *Context) NewJob() (*batchv1.Job, error) {
 		if err := ctx.addGitInitContainers(builder.Spec.Context.Git, &podSpec); err != nil {
 			return nil, errors.Wrap(err, "add git init containers")
 		}
+	}
 
-	case builder.Spec.Context.Raw != nil:
+	if builder.Spec.Context.Raw != nil {
 		if err := ctx.addRawDockerfileInitContainers(*(builder.Spec.Context.Raw), &podSpec); err != nil {
 			return nil, errors.Wrap(err, "add raw init containers")
 		}
 	}
+
 	job := &batchv1.Job{
 		ObjectMeta: ctx.NewObjectMeta(),
 		Spec: batchv1.JobSpec{
