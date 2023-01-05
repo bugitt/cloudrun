@@ -50,7 +50,7 @@ func (ctx *Context) handleService() error {
 
 	// 1. check if the service is already running
 	deployment := new(appsv1.Deployment)
-	exist, err := ctx.GetResource(deployment)
+	exist, err := ctx.GetResource(deployment, ctx.currentRound())
 	if err != nil {
 		return errors.Wrap(err, "failed to get deployment for service type")
 	}
@@ -87,7 +87,7 @@ func (ctx *Context) handleService() error {
 
 func (ctx *Context) deleteDeployment() error {
 	deployment := &appsv1.Deployment{}
-	if exist, err := ctx.GetResource(deployment); err != nil {
+	if exist, err := ctx.GetResource(deployment, ctx.currentRound()); err != nil {
 		return err
 	} else if exist {
 		if err := ctx.Delete(ctx, deployment); err != nil {
@@ -99,14 +99,14 @@ func (ctx *Context) deleteDeployment() error {
 
 func (ctx *Context) createOrUpdateService() error {
 	service := new(corev1.Service)
-	exist, err := ctx.GetResource(service)
+	exist, err := ctx.GetResource(service, ctx.currentRound())
 	if err != nil {
 		return errors.Wrap(err, "failed to get service for service type")
 	}
 
 	if !exist {
 		service = &corev1.Service{
-			ObjectMeta: ctx.NewObjectMeta(),
+			ObjectMeta: ctx.NewObjectMeta(ctx.currentRound()),
 			Spec: corev1.ServiceSpec{
 				Selector: ctx.GetServiceLabels(),
 				Ports:    make([]corev1.ServicePort, 0),
@@ -157,7 +157,7 @@ func (ctx *Context) createOrUpdateService() error {
 
 func (ctx *Context) createDeployment() error {
 	deployment := &appsv1.Deployment{
-		ObjectMeta: ctx.NewObjectMeta(),
+		ObjectMeta: ctx.NewObjectMeta(ctx.currentRound()),
 		Spec: appsv1.DeploymentSpec{
 			Replicas: core.Ptr[int32](1),
 			Selector: &apimetav1.LabelSelector{

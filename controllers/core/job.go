@@ -40,8 +40,10 @@ func CreateAndWatchJob[T types.CloudRunCRD](
 		reCreateJob = true
 	}
 
+	round := obj.GetRound()
+
 	if reCreateJob {
-		if err := DeleteJob(ctx); err != nil {
+		if err := DeleteJob(ctx, round); err != nil {
 			return errors.Wrap(err, "failed to cleanup the old job")
 		}
 		obj.CommonStatus().Status = types.StatusPending
@@ -49,11 +51,11 @@ func CreateAndWatchJob[T types.CloudRunCRD](
 	}
 
 	if IsDoneOrFailed(obj) && deleteJobAfterDone {
-		return DeleteJob(ctx)
+		return DeleteJob(ctx, round)
 	}
 
 	// 1. check if the job is already running
-	job, err := GetJob(ctx)
+	job, err := GetJob(ctx, round)
 	if err != nil {
 		return err
 	}
@@ -83,16 +85,16 @@ func CreateAndWatchJob[T types.CloudRunCRD](
 	obj.CommonStatus().Message = message
 
 	if IsDoneOrFailed(obj) && deleteJobAfterDone {
-		if err := DeleteJob(ctx); err != nil {
+		if err := DeleteJob(ctx, round); err != nil {
 			return errors.Wrap(err, "failed to cleanup the old job")
 		}
 	}
 	return nil
 }
 
-func GetJob(ctx Context) (*batchv1.Job, error) {
+func GetJob(ctx Context, round int) (*batchv1.Job, error) {
 	job := new(batchv1.Job)
-	exist, err := ctx.GetResource(job)
+	exist, err := ctx.GetResource(job, round)
 	if err != nil {
 		return nil, err
 	} else if !exist {
@@ -101,9 +103,9 @@ func GetJob(ctx Context) (*batchv1.Job, error) {
 	return job, nil
 }
 
-func DeleteJob(ctx Context) error {
+func DeleteJob(ctx Context, round int) error {
 	// 1. delete job
-	job, err := GetJob(ctx)
+	job, err := GetJob(ctx, round)
 	if err != nil {
 		ctx.Error(err, "get job when cleanup builder")
 		return errors.Wrap(err, "get job when cleanup builder")

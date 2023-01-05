@@ -42,12 +42,12 @@ type Context interface {
 	Name() string
 	Namespace() string
 	NamespacedName() types.NamespacedName
-	NewObjectMeta() apimetav1.ObjectMeta
+	NewObjectMeta(round int) apimetav1.ObjectMeta
 
 	GetServiceLabels() map[string]string
 
 	CreateResource(obj client.Object, force bool) error
-	GetResource(obj client.Object) (bool, error)
+	GetResource(obj client.Object, round int) (bool, error)
 }
 
 type DefaultContext struct {
@@ -141,8 +141,9 @@ func (ctx *DefaultContext) CreateResource(obj client.Object, force bool) error {
 	return nil
 }
 
-func (ctx *DefaultContext) GetResource(obj client.Object) (bool, error) {
-	if err := ctx.Get(ctx, ktypes.NamespacedName{Namespace: ctx.Namespace(), Name: ctx.Name()}, obj); err != nil {
+func (ctx *DefaultContext) GetResource(obj client.Object, round int) (bool, error) {
+	name := fmt.Sprintf("%s-%d", ctx.Name(), round)
+	if err := ctx.Get(ctx, ktypes.NamespacedName{Namespace: ctx.Namespace(), Name: name}, obj); err != nil {
 		if client.IgnoreNotFound(err) != nil {
 			ctx.Error(err, fmt.Sprintf("Failed to get %s %s/%s", obj.GetObjectKind().GroupVersionKind().Kind, obj.GetNamespace(), obj.GetName()))
 			return false, errors.Wrap(err, fmt.Sprintf("failed to get %s %s/%s", obj.GetObjectKind().GroupVersionKind().Kind, obj.GetNamespace(), obj.GetName()))
@@ -158,7 +159,7 @@ func (ctx *DefaultContext) GetServiceLabels() map[string]string {
 	}
 }
 
-func (ctx *DefaultContext) NewObjectMeta() apimetav1.ObjectMeta {
+func (ctx *DefaultContext) NewObjectMeta(round int) apimetav1.ObjectMeta {
 	ownerRefList := []apimetav1.OwnerReference{}
 	if ownerRef, err := ctx.GetOwnerReferences(); err != nil {
 		ctx.Error(err, "failed get owner reference")
@@ -166,10 +167,15 @@ func (ctx *DefaultContext) NewObjectMeta() apimetav1.ObjectMeta {
 		ownerRefList = append(ownerRefList, ownerRef)
 	}
 
+	name := fmt.Sprintf("%s-%d", ctx.Name(), round)
+	labels := ctx.GetServiceLabels()
+	labels["owner.name"] = ctx.Name()
+	labels["round"] = fmt.Sprintf("%d", round)
+
 	return apimetav1.ObjectMeta{
-		Name:            ctx.Name(),
+		Name:            name,
 		Namespace:       ctx.Namespace(),
-		Labels:          ctx.GetServiceLabels(),
+		Labels:          labels,
 		OwnerReferences: ownerRefList,
 	}
 }

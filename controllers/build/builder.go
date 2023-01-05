@@ -93,6 +93,10 @@ func NewContext(originCtx context.Context, cli client.Client, logger logr.Logger
 	}
 }
 
+func (ctx *Context) currentRound() int {
+	return ctx.Builder.Status.Base.CurrentRound
+}
+
 func workspaceMount() apiv1.VolumeMount {
 	return apiv1.VolumeMount{
 		Name:      workspaceVolumeName,
@@ -175,11 +179,12 @@ func (ctx *Context) NewJob() (*batchv1.Job, error) {
 		}
 	}
 
+	round := ctx.currentRound()
 	job := &batchv1.Job{
-		ObjectMeta: ctx.NewObjectMeta(),
+		ObjectMeta: ctx.NewObjectMeta(round),
 		Spec: batchv1.JobSpec{
 			Template: apiv1.PodTemplateSpec{
-				ObjectMeta: ctx.NewObjectMeta(),
+				ObjectMeta: ctx.NewObjectMeta(round),
 				Spec:       podSpec,
 			},
 			BackoffLimit: &backoffLimit,

@@ -60,6 +60,10 @@ func NewContext(originCtx context.Context, cli client.Client, logger logr.Logger
 	}
 }
 
+func (ctx *Context) currentRound() int {
+	return ctx.Deployer.Status.Base.CurrentRound
+}
+
 func (ctx *Context) Handle() error {
 	deployer := ctx.Deployer
 
@@ -99,7 +103,7 @@ func (ctx *Context) handleJob() error {
 
 func (ctx *Context) newJob() *batchv1.Job {
 	return &batchv1.Job{
-		ObjectMeta: ctx.NewObjectMeta(),
+		ObjectMeta: ctx.NewObjectMeta(ctx.currentRound()),
 		Spec: batchv1.JobSpec{
 			Template: ctx.newPodSpec(),
 		},
@@ -148,7 +152,7 @@ func (ctx *Context) newPodSpec() apiv1.PodTemplateSpec {
 	}
 
 	return apiv1.PodTemplateSpec{
-		ObjectMeta: ctx.NewObjectMeta(),
+		ObjectMeta: ctx.NewObjectMeta(ctx.currentRound()),
 		Spec: apiv1.PodSpec{
 			InitContainers: initContainers,
 			Containers:     containers,
