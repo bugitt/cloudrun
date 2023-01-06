@@ -62,9 +62,9 @@ type BuilderContext struct {
 
 // BuilderSpec defines the desired state of Builder
 type BuilderSpec struct {
-	Context BuilderContext `json:"context"`
+	Context       BuilderContext `json:"context"`
+	WorkspacePath string         `json:"workspacePath,omitempty"`
 	//+kubebuilder:default:=Dockerfile
-	WorkspacePath  string `json:"workspacePath,omitempty"`
 	DockerfilePath string `json:"dockerfilePath,omitempty"`
 	Destination    string `json:"destination"`
 	//+kubebuilder:default:=push-secret

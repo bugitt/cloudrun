@@ -103,6 +103,7 @@ spec:
               destination:
                 type: string
               dockerfilePath:
+                default: Dockerfile
                 type: string
               pushSecretName:
                 default: push-secret
@@ -111,7 +112,6 @@ spec:
                 default: -1
                 type: integer
               workspacePath:
-                default: Dockerfile
                 type: string
             required:
             - context
