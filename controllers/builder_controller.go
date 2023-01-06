@@ -73,6 +73,13 @@ func (r *BuilderReconciler) Reconcile(originalCtx context.Context, req ctrl.Requ
 		builder,
 	)
 
+	defer func() {
+		if re := recover(); re != nil {
+			logger.Error(re.(error), "Reconcile panic")
+			core.PublishStatus(ctx, builder, re.(error))
+		}
+	}()
+
 	isToBeDeleted := builder.GetDeletionTimestamp() != nil
 	if isToBeDeleted {
 		if finalize.Contains(builder) {
@@ -97,13 +104,13 @@ func (r *BuilderReconciler) Reconcile(originalCtx context.Context, req ctrl.Requ
 		}
 	}
 
-	if builder.Spec.Round < builder.Status.Base.CurrentRound {
+	if builder.Spec.Round < builder.CommonStatus().CurrentRound {
 		ctx.Info("Builder is not ready. Ignoring.")
 		builder.CommonStatus().Status = types.StatusUNDO
 		return ctrl.Result{}, r.Status().Update(originalCtx, builder)
 	}
 
-	if builder.Spec.Round > builder.Status.Base.CurrentRound {
+	if builder.Spec.Round > builder.CommonStatus().CurrentRound {
 		// should cleanup the current job and back up the current state
 		if err := core.DeleteJob(ctx, builder.Status.Base.CurrentRound); err != nil {
 			ctx.Error(err, "Failed to delete job")

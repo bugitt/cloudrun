@@ -76,6 +76,13 @@ func (r *DeployerReconciler) Reconcile(originalCtx context.Context, req ctrl.Req
 		deployer,
 	)
 
+	defer func() {
+		if re := recover(); re != nil {
+			logger.Error(re.(error), "Reconcile panic")
+			core.PublishStatus(ctx, deployer, re.(error))
+		}
+	}()
+
 	isToBeDeleted := deployer.GetDeletionTimestamp() != nil
 	if isToBeDeleted {
 		if finalize.Contains(deployer) {
