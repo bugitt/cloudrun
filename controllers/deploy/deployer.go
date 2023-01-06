@@ -19,7 +19,6 @@ package deploy
 import (
 	"context"
 	"fmt"
-	"reflect"
 	"strings"
 
 	"github.com/bugitt/cloudrun/api/v1alpha1"
@@ -64,6 +63,23 @@ func (ctx *Context) currentRound() int {
 	return ctx.Deployer.Status.Base.CurrentRound
 }
 
+func (ctx *Context) CleanupForNextRound() error {
+	deployer := ctx.Deployer
+
+	switch deployer.Spec.Type {
+	case v1alpha1.JOB:
+		return core.DeleteJob(ctx, ctx.currentRound())
+	case v1alpha1.SERVICE:
+		return ctx.deleteDeployment()
+	default:
+		return fmt.Errorf("unknown deployer type: %s", deployer.Spec.Type)
+	}
+}
+
+func (ctx *Context) BackupState() error {
+	return core.BackupState(ctx.Deployer, ctx.Deployer.Spec)
+}
+
 func (ctx *Context) Handle() error {
 	deployer := ctx.Deployer
 
@@ -77,25 +93,12 @@ func (ctx *Context) Handle() error {
 	}
 }
 
-func (ctx *Context) checkChanged() (bool, error) {
-	return core.CheckChanged(
-		ctx,
-		ctx.Deployer,
-		func(oldObj, newObj *v1alpha1.Deployer) bool {
-			return reflect.DeepEqual(oldObj.Spec, newObj.Spec)
-		},
-	)
-}
-
 func (ctx *Context) handleJob() error {
 	return core.CreateAndWatchJob(
 		ctx,
 		ctx.Deployer,
 		func() (*batchv1.Job, error) {
 			return ctx.newJob(), nil
-		},
-		func() (bool, error) {
-			return ctx.checkChanged()
 		},
 		false,
 	)

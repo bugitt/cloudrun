@@ -97,10 +97,25 @@ func (r *BuilderReconciler) Reconcile(originalCtx context.Context, req ctrl.Requ
 		}
 	}
 
-	if builder.Spec.Round == -1 {
+	if builder.Spec.Round < builder.Status.Base.CurrentRound {
 		ctx.Info("Builder is not ready. Ignoring.")
 		builder.CommonStatus().Status = types.StatusUNDO
 		return ctrl.Result{}, r.Status().Update(originalCtx, builder)
+	}
+
+	if builder.Spec.Round > builder.Status.Base.CurrentRound {
+		// should cleanup the current job and back up the current state
+		if err := core.DeleteJob(ctx, builder.Status.Base.CurrentRound); err != nil {
+			ctx.Error(err, "Failed to delete job")
+			return ctrl.Result{}, errors.Wrap(err, "failed to delete job")
+		}
+		if err := ctx.BackupState(); err != nil {
+			ctx.Error(err, "Failed to backup state")
+			return ctrl.Result{}, errors.Wrap(err, "failed to backup state")
+		}
+		builder.Status.Base.Status = types.StatusPending
+		builder.Status.Base.CurrentRound = builder.Spec.Round
+		return ctrl.Result{RequeueAfter: 1 * time.Second}, r.Status().Update(originalCtx, builder)
 	}
 
 	ctx.FixBuilder()
@@ -148,9 +163,6 @@ func (r *BuilderReconciler) createAndWatchJob(ctx *build.Context) error {
 		func() (*batchv1.Job, error) {
 			return ctx.NewJob()
 		},
-		func() (bool, error) {
-			return ctx.CheckJobChanged()
-		},
-		true,
+		false,
 	)
 }

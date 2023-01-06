@@ -100,10 +100,24 @@ func (r *DeployerReconciler) Reconcile(originalCtx context.Context, req ctrl.Req
 		}
 	}
 
-	if deployer.Spec.Round == -1 {
+	if deployer.Spec.Round < deployer.CommonStatus().CurrentRound {
 		ctx.Info("Deployer is not ready. Ignoring.")
 		deployer.CommonStatus().Status = types.StatusUNDO
 		return ctrl.Result{}, r.Status().Update(ctx, deployer)
+	}
+
+	if deployer.Spec.Round > deployer.CommonStatus().CurrentRound {
+		if err := ctx.CleanupForNextRound(); err != nil {
+			ctx.Error(err, "Failed to cleanup for next round")
+			return ctrl.Result{}, errors.Wrap(err, "failed to cleanup for next round")
+		}
+		if err := ctx.BackupState(); err != nil {
+			ctx.Error(err, "Failed to backup state")
+			return ctrl.Result{}, errors.Wrap(err, "failed to backup state")
+		}
+		deployer.CommonStatus().Status = types.StatusPending
+		deployer.CommonStatus().CurrentRound = deployer.Spec.Round
+		return ctrl.Result{RequeueAfter: 1 * time.Second}, r.Status().Update(ctx, deployer)
 	}
 
 	if err := ctx.Handle(); err != nil {

@@ -19,10 +19,8 @@ package build
 import (
 	"context"
 	"path/filepath"
-	"reflect"
 
 	"github.com/bugitt/cloudrun/api/v1alpha1"
-	cloudapiv1alpha1 "github.com/bugitt/cloudrun/api/v1alpha1"
 	"github.com/bugitt/cloudrun/controllers/core"
 	"github.com/bugitt/cloudrun/types"
 	"github.com/go-logr/logr"
@@ -110,6 +108,10 @@ func (ctx *Context) FixBuilder() {
 	}
 }
 
+func (ctx *Context) BackupState() error {
+	return core.BackupState(ctx.Builder, ctx.Builder.Spec)
+}
+
 func (ctx *Context) NewJob() (*batchv1.Job, error) {
 	builder := ctx.Builder
 
@@ -191,19 +193,4 @@ func (ctx *Context) NewJob() (*batchv1.Job, error) {
 		},
 	}
 	return job, nil
-}
-
-func (ctx *Context) CheckJobChanged() (bool, error) {
-	builder := ctx.Builder
-	return core.CheckChanged(
-		ctx,
-		builder,
-		func(oldObj, newObj *cloudapiv1alpha1.Builder) bool {
-			return isSpecEqual(*oldObj, *newObj)
-		},
-	)
-}
-
-func isSpecEqual(oldBuilder, newBuilder cloudapiv1alpha1.Builder) bool {
-	return reflect.DeepEqual(oldBuilder.Spec, newBuilder.Spec)
 }

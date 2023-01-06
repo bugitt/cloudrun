@@ -26,29 +26,9 @@ func CreateAndWatchJob[T types.CloudRunCRD](
 	ctx Context,
 	obj T,
 	newJob func() (*batchv1.Job, error),
-	checkJobChanged func() (bool, error),
 	deleteJobAfterDone bool,
 ) error {
-	reCreateJob, err := checkJobChanged()
-	if err != nil {
-		return errors.Wrap(err, "failed to compare and update old job spec")
-	}
-
-	if obj.CommonStatus().CurrentRound < obj.GetRound() {
-		obj.CommonStatus().CurrentRound = obj.GetRound()
-		PublishStatus(ctx, obj, nil)
-		reCreateJob = true
-	}
-
 	round := obj.GetRound()
-
-	if reCreateJob {
-		if err := DeleteJob(ctx, round); err != nil {
-			return errors.Wrap(err, "failed to cleanup the old job")
-		}
-		obj.CommonStatus().Status = types.StatusPending
-		return nil
-	}
 
 	if IsDoneOrFailed(obj) && deleteJobAfterDone {
 		return DeleteJob(ctx, round)

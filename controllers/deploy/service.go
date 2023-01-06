@@ -29,24 +29,6 @@ import (
 
 func (ctx *Context) handleService() error {
 	deployer := ctx.Deployer
-	reCreate, err := ctx.checkChanged()
-	if err != nil {
-		return errors.Wrap(err, "failed to compare and update old deployer spec for service type")
-	}
-
-	if deployer.CommonStatus().CurrentRound < deployer.GetRound() {
-		deployer.CommonStatus().CurrentRound = deployer.GetRound()
-		core.PublishStatus(ctx, deployer, nil)
-		reCreate = true
-	}
-
-	if reCreate {
-		if err := ctx.deleteDeployment(); err != nil {
-			return errors.Wrap(err, "failed to cleanup the old service for service type")
-		}
-		deployer.CommonStatus().Status = types.StatusPending
-		return nil
-	}
 
 	// 1. check if the service is already running
 	deployment := new(appsv1.Deployment)
