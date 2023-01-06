@@ -124,6 +124,9 @@ spec:
                 properties:
                   currentRound:
                     type: integer
+                  endTime:
+                    format: int64
+                    type: integer
                   historyList:
                     description: HistoryList is used to store the history of the CRD.
                     items:
@@ -133,6 +136,9 @@ spec:
                     description: Message is mainly used to store the error message
                       when the CRD is failed.
                     type: string
+                  startTime:
+                    format: int64
+                    type: integer
                   status:
                     type: string
                 required:
