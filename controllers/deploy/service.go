@@ -56,11 +56,6 @@ func (ctx *Context) handleService() error {
 	if err != nil {
 		return errors.Wrap(err, "failed to get status from pod for service type")
 	}
-	if status == types.StatusPending {
-		status = types.StatusDoing
-	} else if status == types.StatusDoing {
-		status = types.StatusDone
-	}
 	deployer.CommonStatus().Status = status
 	deployer.CommonStatus().Message = message
 
