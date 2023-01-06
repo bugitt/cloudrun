@@ -17,6 +17,8 @@ limitations under the License.
 package core
 
 import (
+	"time"
+
 	"github.com/bugitt/cloudrun/types"
 	"github.com/pkg/errors"
 	batchv1 "k8s.io/api/batch/v1"
@@ -63,6 +65,9 @@ func CreateAndWatchJob[T types.CloudRunCRD](
 	}
 	obj.CommonStatus().Status = status
 	obj.CommonStatus().Message = message
+	if status == types.StatusFailed || status == types.StatusDone {
+		obj.CommonStatus().EndTime = time.Now().Unix()
+	}
 
 	if IsDoneOrFailed(obj) && deleteJobAfterDone {
 		if err := DeleteJob(ctx, round); err != nil {

@@ -29,9 +29,11 @@ type CloudRunCRDSpec interface {
 }
 
 type History[T CloudRunCRDSpec] struct {
-	Round  int          `json:"round"`
-	Status types.Status `json:"Status"`
-	Spec   T            `json:"spec"`
+	Round     int          `json:"round"`
+	Status    types.Status `json:"Status"`
+	Spec      T            `json:"spec"`
+	StartTime int64        `json:"startTime"`
+	EndTime   int64        `json:"endTime"`
 }
 
 func BackupState[T types.CloudRunCRD, S CloudRunCRDSpec](obj T, spec S) error {
@@ -40,9 +42,11 @@ func BackupState[T types.CloudRunCRD, S CloudRunCRDSpec](obj T, spec S) error {
 		return nil
 	}
 	history := History[S]{
-		Round:  obj.CommonStatus().CurrentRound,
-		Status: obj.CommonStatus().Status,
-		Spec:   spec,
+		Round:     obj.CommonStatus().CurrentRound,
+		Status:    obj.CommonStatus().Status,
+		Spec:      spec,
+		StartTime: obj.CommonStatus().StartTime,
+		EndTime:   obj.CommonStatus().EndTime,
 	}
 	jsonBytes, err := json.Marshal(history)
 	if err != nil {

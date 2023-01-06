@@ -120,8 +120,9 @@ func (r *BuilderReconciler) Reconcile(originalCtx context.Context, req ctrl.Requ
 			ctx.Error(err, "Failed to backup state")
 			return ctrl.Result{}, errors.Wrap(err, "failed to backup state")
 		}
-		builder.Status.Base.Status = types.StatusPending
-		builder.Status.Base.CurrentRound = builder.Spec.Round
+		builder.CommonStatus().Status = types.StatusPending
+		builder.CommonStatus().CurrentRound = builder.Spec.Round
+		builder.CommonStatus().StartTime = time.Now().Unix()
 		return ctrl.Result{RequeueAfter: 1 * time.Second}, r.Status().Update(originalCtx, builder)
 	}
 

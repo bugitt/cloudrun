@@ -124,6 +124,7 @@ func (r *DeployerReconciler) Reconcile(originalCtx context.Context, req ctrl.Req
 		}
 		deployer.CommonStatus().Status = types.StatusPending
 		deployer.CommonStatus().CurrentRound = deployer.Spec.Round
+		deployer.CommonStatus().StartTime = time.Now().Unix()
 		return ctrl.Result{RequeueAfter: 1 * time.Second}, r.Status().Update(ctx, deployer)
 	}
 

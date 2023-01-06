@@ -17,6 +17,8 @@ limitations under the License.
 package deploy
 
 import (
+	"time"
+
 	"github.com/bugitt/cloudrun/controllers/core"
 	"github.com/bugitt/cloudrun/types"
 	"github.com/pkg/errors"
@@ -58,6 +60,9 @@ func (ctx *Context) handleService() error {
 	}
 	deployer.CommonStatus().Status = status
 	deployer.CommonStatus().Message = message
+	if status == types.StatusDone || status == types.StatusFailed || status == types.StatusDoing {
+		deployer.CommonStatus().EndTime = time.Now().Unix()
+	}
 
 	return nil
 }
