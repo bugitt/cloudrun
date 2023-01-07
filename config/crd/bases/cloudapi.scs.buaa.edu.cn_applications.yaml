@@ -87,6 +87,21 @@ spec:
                         - region
                         type: object
                     type: object
+                  deployerHooks:
+                    items:
+                      properties:
+                        deployerName:
+                          type: string
+                        image:
+                          type: string
+                        resourcePool:
+                          type: string
+                      required:
+                      - deployerName
+                      - image
+                      - resourcePool
+                      type: object
+                    type: array
                   destination:
                     type: string
                   dockerfilePath:

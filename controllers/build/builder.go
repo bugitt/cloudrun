@@ -28,6 +28,7 @@ import (
 	batchv1 "k8s.io/api/batch/v1"
 	apiv1 "k8s.io/api/core/v1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	ktypes "k8s.io/apimachinery/pkg/types"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -110,6 +111,25 @@ func (ctx *Context) FixBuilder() {
 
 func (ctx *Context) BackupState() error {
 	return core.BackupState(ctx.Builder, ctx.Builder.Spec)
+}
+
+func (ctx *Context) TriggerDeployer() error {
+	for _, hook := range ctx.Builder.Spec.DeployerHooks {
+		deployer := new(v1alpha1.Deployer)
+		if err := ctx.Get(ctx.Context, ktypes.NamespacedName{Namespace: ctx.Builder.Namespace, Name: hook.DeployerName}, deployer); err != nil {
+			if client.IgnoreNotFound(err) == nil {
+				continue
+			}
+			return errors.Wrapf(err, "get deployer %s when try to trigger it", hook.DeployerName)
+		}
+		deployer.Spec.Round = deployer.CommonStatus().CurrentRound + 1
+		deployer.Spec.Containers[0].Image = hook.Image
+		deployer.Spec.ResourcePool = hook.ResourcePool
+		if err := ctx.Update(ctx.Context, deployer); err != nil {
+			return errors.Wrapf(err, "update deployer %s when try to trigger it", hook.DeployerName)
+		}
+	}
+	return nil
 }
 
 func (ctx *Context) NewJob() (*batchv1.Job, error) {

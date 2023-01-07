@@ -211,6 +211,7 @@ func (ctx *Context) handleJob() error {
 			return ctx.newJob(), nil
 		},
 		false,
+		nil,
 	)
 }
 

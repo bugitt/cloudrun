@@ -29,6 +29,7 @@ func CreateAndWatchJob[T types.CloudRunCRD](
 	obj T,
 	newJob func() (*batchv1.Job, error),
 	deleteJobAfterDone bool,
+	hookAfterSuccess func() error,
 ) error {
 	round := obj.GetRound()
 
@@ -63,11 +64,17 @@ func CreateAndWatchJob[T types.CloudRunCRD](
 	if err != nil {
 		return errors.Wrap(err, "failed to get status from pod")
 	}
-	obj.CommonStatus().Status = status
-	obj.CommonStatus().Message = message
 	if status == types.StatusFailed || status == types.StatusDone {
 		obj.CommonStatus().EndTime = time.Now().Unix()
+		if status == types.StatusDone && obj.CommonStatus().Status != types.StatusDone && hookAfterSuccess != nil {
+			if err := hookAfterSuccess(); err != nil {
+				obj.CommonStatus().Status = types.StatusDoing
+				return nil
+			}
+		}
 	}
+	obj.CommonStatus().Status = status
+	obj.CommonStatus().Message = message
 
 	if IsDoneOrFailed(obj) && deleteJobAfterDone {
 		if err := DeleteJob(ctx, round); err != nil {

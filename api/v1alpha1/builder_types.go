@@ -60,6 +60,12 @@ type BuilderContext struct {
 	Raw *string           `json:"raw,omitempty"`
 }
 
+type DeployerHook struct {
+	DeployerName string `json:"deployerName"`
+	Image        string `json:"image"`
+	ResourcePool string `json:"resourcePool"`
+}
+
 // BuilderSpec defines the desired state of Builder
 type BuilderSpec struct {
 	Context       BuilderContext `json:"context"`
@@ -70,7 +76,8 @@ type BuilderSpec struct {
 	//+kubebuilder:default:=push-secret
 	PushSecretName string `json:"pushSecretName,omitempty"`
 	//+kubebuilder:default:=-1
-	Round int `json:"round,omitempty"`
+	Round         int            `json:"round,omitempty"`
+	DeployerHooks []DeployerHook `json:"deployerHooks,omitempty"`
 }
 
 // BuilderStatus defines the observed state of Builder

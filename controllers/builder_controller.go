@@ -173,5 +173,8 @@ func (r *BuilderReconciler) createAndWatchJob(ctx *build.Context) error {
 			return ctx.NewJob()
 		},
 		false,
+		func() error {
+			return ctx.TriggerDeployer()
+		},
 	)
 }
