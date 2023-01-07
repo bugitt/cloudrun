@@ -17,25 +17,25 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"github.com/bugitt/cloudrun/types"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
+type ResourceUsage struct {
+	Resource       *types.Resource       `json:"resource"`
+	TypeMeta       metav1.TypeMeta       `json:"typeMeta"`
+	NamespacedName *types.NamespacedName `json:"namespacedName"`
+}
 
 // ResourcePoolSpec defines the desired state of ResourcePool
 type ResourcePoolSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-
-	// Foo is an example field of ResourcePool. Edit resourcepool_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
+	Total *types.Resource `json:"total"`
+	Free  *types.Resource `json:"free"`
+	Usage []ResourceUsage `json:"usage"`
 }
 
 // ResourcePoolStatus defines the observed state of ResourcePool
 type ResourcePoolStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
 }
 
 //+kubebuilder:object:root=true

@@ -9,4 +9,19 @@ metadata:
     app.kubernetes.io/created-by: cloudrun
   name: resourcepool-sample
 spec:
-  # TODO(user): Add fields here
+  total: 
+    cpu: 2000
+    memory: 4096
+  usage:
+    - resource:
+        cpu: 1000
+        memory: 2048
+      typeMeta:
+        kind: Pod
+        apiVersion: v1
+      namespacedName:
+        name: pod1
+        namespace: default
+  free:
+    cpu: 1000
+    memory: 2048

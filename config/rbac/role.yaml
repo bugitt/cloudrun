@@ -122,6 +122,32 @@ rules:
 - apiGroups:
   - cloudapi.scs.buaa.edu.cn
   resources:
+  - resourcepools
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - cloudapi.scs.buaa.edu.cn
+  resources:
+  - resourcepools/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - cloudapi.scs.buaa.edu.cn
+  resources:
+  - resourcepools/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - cloudapi.scs.buaa.edu.cn
+  resources:
   - workflows
   verbs:
   - create
