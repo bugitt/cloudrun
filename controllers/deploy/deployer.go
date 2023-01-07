@@ -152,6 +152,11 @@ func (ctx *Context) BegResource() error {
 	})
 	resourcePool.Spec.Free.CPU = resourcePool.Spec.Free.CPU - cpu
 	resourcePool.Spec.Free.Memory = resourcePool.Spec.Free.Memory - memory
+	if resourcePool.Spec.Free.CPU < 0 || resourcePool.Spec.Free.Memory < 0 {
+		deployer.CommonStatus().Status = types.StatusFailed
+		return errors.New("resource pool is not enough")
+	}
+
 	if err := ctx.Update(ctx, resourcePool); err != nil {
 		return errors.Wrap(err, "update resource pool")
 	}
