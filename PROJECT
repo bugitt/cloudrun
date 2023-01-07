@@ -43,4 +43,12 @@ resources:
   kind: Workflow
   path: github.com/bugitt/cloudrun/api/v1alpha1
   version: v1alpha1
+- api:
+    crdVersion: v1
+  controller: true
+  domain: scs.buaa.edu.cn
+  group: cloudapi
+  kind: ResourcePool
+  path: github.com/bugitt/cloudrun/api/v1alpha1
+  version: v1alpha1
 version: "3"

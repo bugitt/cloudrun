@@ -1,0 +1,12 @@
+apiVersion: cloudapi.scs.buaa.edu.cn/v1alpha1
+kind: ResourcePool
+metadata:
+  labels:
+    app.kubernetes.io/name: resourcepool
+    app.kubernetes.io/instance: resourcepool-sample
+    app.kubernetes.io/part-of: cloudrun
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/created-by: cloudrun
+  name: resourcepool-sample
+spec:
+  # TODO(user): Add fields here

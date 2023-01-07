@@ -4,4 +4,5 @@ resources:
 - cloudapi_v1alpha1_builder.yaml
 - cloudapi_v1alpha1_deployer.yaml
 - cloudapi_v1alpha1_workflow.yaml
+- cloudapi_v1alpha1_resourcepool.yaml
 #+kubebuilder:scaffold:manifestskustomizesamples
