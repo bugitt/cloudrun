@@ -63,11 +63,12 @@ type ContainerSpec struct {
 	Image    string            `json:"image"`
 	Resource ContainerResource `json:"resource"`
 	//+kubebuilder:default:=false
-	Initial bool              `json:"initial,omitempty"`
-	Command []string          `json:"command,omitempty"`
-	Args    []string          `json:"args,omitempty"`
-	Envs    map[string]string `json:"env,omitempty"`
-	Ports   []Port            `json:"ports,omitempty"`
+	Initial    bool              `json:"initial,omitempty"`
+	WorkingDir string            `json:"workingDir,omitempty"`
+	Command    []string          `json:"command,omitempty"`
+	Args       []string          `json:"args,omitempty"`
+	Envs       map[string]string `json:"env,omitempty"`
+	Ports      []Port            `json:"ports,omitempty"`
 }
 
 // DeployerSpec defines the desired state of Deployer

@@ -102,6 +102,8 @@ spec:
                       - cpu
                       - memory
                       type: object
+                    workingDir:
+                      type: string
                   required:
                   - image
                   - name

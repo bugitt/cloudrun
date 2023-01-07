@@ -242,6 +242,7 @@ func (ctx *Context) newPodSpec() apiv1.PodTemplateSpec {
 			Name:            containerSpec.Name,
 			Image:           containerSpec.Image,
 			ImagePullPolicy: apiv1.PullAlways,
+			WorkingDir:      containerSpec.WorkingDir,
 			Command:         containerSpec.Command,
 			Args:            containerSpec.Args,
 			Env:             envVars,
