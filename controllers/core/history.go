@@ -30,7 +30,7 @@ type CloudRunCRDSpec interface {
 
 type History[T CloudRunCRDSpec] struct {
 	Round     int          `json:"round"`
-	Status    types.Status `json:"Status"`
+	Status    types.Status `json:"status"`
 	Spec      T            `json:"spec"`
 	StartTime int64        `json:"startTime"`
 	EndTime   int64        `json:"endTime"`
