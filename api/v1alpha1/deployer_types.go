@@ -77,12 +77,14 @@ type DeployerSpec struct {
 	//+kubebuilder:validation:MinItems=1
 	Containers []ContainerSpec `json:"containers"`
 	//+kubebuilder:default:=-1
-	Round int `json:"round,omitempty"`
+	Round        int    `json:"round,omitempty"`
+	ResourcePool string `json:"resourcePool"`
 }
 
 // DeployerStatus defines the observed state of Deployer
 type DeployerStatus struct {
-	Base *types.CommonStatus `json:"base,omitempty"`
+	Base         *types.CommonStatus `json:"base,omitempty"`
+	ResourcePool string              `json:"resourcePool"`
 }
 
 //+kubebuilder:object:root=true

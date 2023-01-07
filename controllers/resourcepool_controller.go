@@ -25,6 +25,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	cloudapiv1alpha1 "github.com/bugitt/cloudrun/api/v1alpha1"
+	"github.com/bugitt/cloudrun/types"
+	"github.com/pkg/errors"
 )
 
 // ResourcePoolReconciler reconciles a ResourcePool object
@@ -37,19 +39,35 @@ type ResourcePoolReconciler struct {
 //+kubebuilder:rbac:groups=cloudapi.scs.buaa.edu.cn,resources=resourcepools/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=cloudapi.scs.buaa.edu.cn,resources=resourcepools/finalizers,verbs=update
 
-// Reconcile is part of the main kubernetes reconciliation loop which aims to
-// move the current state of the cluster closer to the desired state.
-// TODO(user): Modify the Reconcile function to compare the state specified by
-// the ResourcePool object against the actual cluster state, and then
-// perform operations to make the cluster state reflect the state specified by
-// the user.
-//
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.13.0/pkg/reconcile
 func (r *ResourcePoolReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	_ = log.FromContext(ctx)
+	logger := log.FromContext(ctx, "resourcePool", req.NamespacedName)
+	resourcePool := &cloudapiv1alpha1.ResourcePool{}
+	err := r.Get(ctx, req.NamespacedName, resourcePool)
+	if err != nil {
+		if client.IgnoreNotFound(err) == nil {
+			logger.Info("ResourcePool resource not found. Ignoring since object must be deleted.")
+			return ctrl.Result{}, nil
+		}
+		logger.Error(err, "Failed to get ResourcePool.")
+		return ctrl.Result{}, errors.Wrap(err, "failed to get ResourcePool")
+	}
 
-	// TODO(user): your logic here
+	// check validation of the resource pool
+	used := &types.Resource{}
+	for _, usage := range resourcePool.Spec.Usage {
+		used.CPU += usage.Resource.CPU
+		used.Memory += usage.Resource.Memory
+	}
+	if used.CPU+resourcePool.Spec.Free.CPU != resourcePool.Spec.Capacity.CPU {
+		logger.Error(nil, "CPU usage is not equal to capacity.")
+		return ctrl.Result{}, errors.New("CPU usage is not equal to capacity")
+	}
+	if used.Memory+resourcePool.Spec.Free.Memory != resourcePool.Spec.Capacity.Memory {
+		logger.Error(nil, "Memory usage is not equal to capacity.")
+		return ctrl.Result{}, errors.New("Memory usage is not equal to capacity")
+	}
 
 	return ctrl.Result{}, nil
 }

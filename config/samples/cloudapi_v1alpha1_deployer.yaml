@@ -9,8 +9,9 @@ metadata:
     app.kubernetes.io/created-by: cloudrun
   name: deployer-sample
 spec:
-  round: 3
+  round: 4
   type: service
+  resourcePool: resourcepool-sample
   containers:
     - image: nginx:1.20
       initial: false
@@ -25,5 +26,5 @@ spec:
       env:
         somekey: somevalue
       resource:
-        cpu: 100
-        memory: 100
+        cpu: 200
+        memory: 1000

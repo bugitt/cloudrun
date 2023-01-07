@@ -25,10 +25,12 @@ import (
 	"github.com/bugitt/cloudrun/controllers/core"
 	"github.com/bugitt/cloudrun/types"
 	"github.com/go-logr/logr"
+	"github.com/pkg/errors"
 	batchv1 "k8s.io/api/batch/v1"
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	ktypes "k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -63,17 +65,120 @@ func (ctx *Context) currentRound() int {
 	return ctx.Deployer.Status.Base.CurrentRound
 }
 
+func (ctx *Context) GetCurrentResourcePool() (*v1alpha1.ResourcePool, error) {
+	resourcePoolName := ctx.Deployer.Status.ResourcePool
+	if resourcePoolName == "" {
+		return nil, nil
+	}
+	resourcePool := &v1alpha1.ResourcePool{}
+	if err := ctx.Get(ctx, ktypes.NamespacedName{Name: resourcePoolName}, resourcePool); err != nil {
+		return nil, errors.Wrap(err, "get resource pool")
+	}
+	return resourcePool, nil
+}
+
+func (ctx *Context) ReleaseResource() error {
+	deployer := ctx.Deployer
+	// release the resource usage
+	resourcePool, err := ctx.GetCurrentResourcePool()
+	if err != nil {
+		return err
+	}
+	if resourcePool == nil {
+		return nil
+	}
+	targetIndex := -1
+	for i, usage := range resourcePool.Spec.Usage {
+		if usage.TypeMeta.APIVersion == deployer.APIVersion && usage.TypeMeta.Kind == deployer.Kind {
+			if usage.NamespacedName.Name == deployer.Name && usage.NamespacedName.Namespace == deployer.Namespace {
+				targetIndex = i
+				break
+			}
+		}
+	}
+	if targetIndex == -1 {
+		return nil
+	}
+	usage := resourcePool.Spec.Usage[targetIndex]
+	resourcePool.Spec.Usage = append(resourcePool.Spec.Usage[:targetIndex], resourcePool.Spec.Usage[targetIndex+1:]...)
+	resourcePool.Spec.Free.CPU = resourcePool.Spec.Free.CPU + (usage.Resource.CPU)
+	resourcePool.Spec.Free.Memory = resourcePool.Spec.Free.Memory + (usage.Resource.Memory)
+	return ctx.Update(ctx, resourcePool)
+}
+
+func (ctx *Context) BegResource() error {
+	deployer := ctx.Deployer
+	var (
+		cpu    int32
+		memory int32
+	)
+	for _, container := range deployer.Spec.Containers {
+		resource := container.Resource
+		cpu += resource.CPU
+		memory += resource.Memory
+	}
+	resourcePool := &v1alpha1.ResourcePool{}
+	if err := ctx.Get(ctx, ktypes.NamespacedName{Name: deployer.Spec.ResourcePool}, resourcePool); err != nil {
+		return errors.Wrap(err, "get resource pool")
+	}
+	targetIndex := -1
+	for i, usage := range resourcePool.Spec.Usage {
+		if usage.TypeMeta.APIVersion == deployer.APIVersion && usage.TypeMeta.Kind == deployer.Kind {
+			if usage.NamespacedName.Name == deployer.Name && usage.NamespacedName.Namespace == deployer.Namespace {
+				targetIndex = i
+				break
+			}
+		}
+	}
+	if targetIndex != -1 {
+		usage := resourcePool.Spec.Usage[targetIndex]
+		if resource := usage.Resource; resource.CPU == cpu && resource.Memory == memory {
+			return nil
+		}
+		if ctx.ReleaseResource() != nil {
+			return errors.New("release old resource when try to beg new resource")
+		}
+	}
+	resourcePool.Spec.Usage = append(resourcePool.Spec.Usage, v1alpha1.ResourceUsage{
+		TypeMeta: deployer.TypeMeta,
+		NamespacedName: &types.NamespacedName{
+			Namespace: deployer.Namespace,
+			Name:      deployer.Name,
+		},
+		Resource: &types.Resource{
+			CPU:    cpu,
+			Memory: memory,
+		},
+	})
+	resourcePool.Spec.Free.CPU = resourcePool.Spec.Free.CPU - cpu
+	resourcePool.Spec.Free.Memory = resourcePool.Spec.Free.Memory - memory
+	if err := ctx.Update(ctx, resourcePool); err != nil {
+		return errors.Wrap(err, "update resource pool")
+	}
+	deployer.Status.ResourcePool = deployer.Spec.ResourcePool
+	return nil
+}
+
 func (ctx *Context) CleanupForNextRound() error {
 	deployer := ctx.Deployer
 
+	var err error
 	switch deployer.Spec.Type {
 	case v1alpha1.JOB:
-		return core.DeleteJob(ctx, ctx.currentRound())
+		err = core.DeleteJob(ctx, ctx.currentRound())
 	case v1alpha1.SERVICE:
-		return ctx.deleteDeployment()
+		err = ctx.deleteDeployment()
 	default:
-		return fmt.Errorf("unknown deployer type: %s", deployer.Spec.Type)
+		err = fmt.Errorf("unknown deployer type: %s", deployer.Spec.Type)
 	}
+	if err != nil {
+		return err
+	}
+	if err := ctx.ReleaseResource(); err != nil {
+		return err
+	}
+	ctx.Deployer.Status.ResourcePool = ""
+	return nil
 }
 
 func (ctx *Context) BackupState() error {

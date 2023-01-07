@@ -35,21 +35,25 @@ spec:
           spec:
             description: ResourcePoolSpec defines the desired state of ResourcePool
             properties:
-              free:
+              capacity:
                 properties:
                   cpu:
+                    format: int32
                     type: integer
                   memory:
+                    format: int32
                     type: integer
                 required:
                 - cpu
                 - memory
                 type: object
-              total:
+              free:
                 properties:
                   cpu:
+                    format: int32
                     type: integer
                   memory:
+                    format: int32
                     type: integer
                 required:
                 - cpu
@@ -71,8 +75,10 @@ spec:
                     resource:
                       properties:
                         cpu:
+                          format: int32
                           type: integer
                         memory:
+                          format: int32
                           type: integer
                       required:
                       - cpu
@@ -104,8 +110,8 @@ spec:
                   type: object
                 type: array
             required:
+            - capacity
             - free
-            - total
             - usage
             type: object
           status:

@@ -42,6 +42,9 @@ type DeployerReconciler struct {
 //+kubebuilder:rbac:groups=cloudapi.scs.buaa.edu.cn,resources=deployers,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=cloudapi.scs.buaa.edu.cn,resources=deployers/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=cloudapi.scs.buaa.edu.cn,resources=deployers/finalizers,verbs=update
+//+kubebuilder:rbac:groups=cloudapi.scs.buaa.edu.cn,resources=resourcepools,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=cloudapi.scs.buaa.edu.cn,resources=resourcepools/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=cloudapi.scs.buaa.edu.cn,resources=resourcepools/finalizers,verbs=update
 //+kubebuilder:rbac:groups=core,resources=pods,verbs=get;list;watch;create;delete
 //+kubebuilder:rbac:groups=core,resources=pods/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=core,resources=secrets,verbs=get;list;watch;create;delete
@@ -126,6 +129,10 @@ func (r *DeployerReconciler) Reconcile(originalCtx context.Context, req ctrl.Req
 		deployer.CommonStatus().CurrentRound = deployer.Spec.Round
 		deployer.CommonStatus().StartTime = time.Now().Unix()
 		deployer.CommonStatus().EndTime = 0
+		if err := ctx.BegResource(); err != nil {
+			ctx.Error(err, "Failed to beg resource")
+			return ctrl.Result{}, errors.Wrap(err, "failed to beg resource")
+		}
 		return ctrl.Result{RequeueAfter: 1 * time.Second}, r.Status().Update(ctx, deployer)
 	}
 
@@ -149,7 +156,7 @@ func (r *DeployerReconciler) Reconcile(originalCtx context.Context, req ctrl.Req
 
 func (r *DeployerReconciler) finalizeDeployer(ctx *deploy.Context) error {
 	ctx.Info("Start to finalize Deployer")
-	return nil
+	return ctx.ReleaseResource()
 }
 
 // SetupWithManager sets up the controller with the Manager.

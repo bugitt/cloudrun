@@ -29,9 +29,9 @@ type ResourceUsage struct {
 
 // ResourcePoolSpec defines the desired state of ResourcePool
 type ResourcePoolSpec struct {
-	Total *types.Resource `json:"total"`
-	Free  *types.Resource `json:"free"`
-	Usage []ResourceUsage `json:"usage"`
+	Capacity *types.Resource `json:"capacity"`
+	Free     *types.Resource `json:"free"`
+	Usage    []ResourceUsage `json:"usage"`
 }
 
 // ResourcePoolStatus defines the observed state of ResourcePool

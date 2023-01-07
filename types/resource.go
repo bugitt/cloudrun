@@ -16,8 +16,8 @@ limitations under the License.
 package types
 
 type Resource struct {
-	CPU    int `json:"cpu"`
-	Memory int `json:"memory"`
+	CPU    int32 `json:"cpu"`
+	Memory int32 `json:"memory"`
 }
 
 func (r *Resource) DeepCopyInto(out *Resource) {

@@ -109,6 +109,8 @@ spec:
                   type: object
                 minItems: 1
                 type: array
+              resourcePool:
+                type: string
               round:
                 default: -1
                 type: integer
@@ -119,6 +121,7 @@ spec:
                 type: string
             required:
             - containers
+            - resourcePool
             - type
             type: object
           status:
@@ -149,6 +152,10 @@ spec:
                 - currentRound
                 - status
                 type: object
+              resourcePool:
+                type: string
+            required:
+            - resourcePool
             type: object
         required:
         - spec
