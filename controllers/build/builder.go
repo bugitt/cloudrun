@@ -123,7 +123,11 @@ func (ctx *Context) TriggerDeployer() error {
 			return errors.Wrapf(err, "get deployer %s when try to trigger it", hook.DeployerName)
 		}
 		deployer.Spec.Round = deployer.CommonStatus().CurrentRound + 1
-		deployer.Spec.Containers[0].Image = hook.Image
+		if hook.DynamicImage {
+			deployer.Spec.Containers[0].Image = ctx.Builder.Spec.Destination
+		} else {
+			deployer.Spec.Containers[0].Image = hook.Image
+		}
 		deployer.Spec.ResourcePool = hook.ResourcePool
 		if err := ctx.Update(ctx.Context, deployer); err != nil {
 			return errors.Wrapf(err, "update deployer %s when try to trigger it", hook.DeployerName)

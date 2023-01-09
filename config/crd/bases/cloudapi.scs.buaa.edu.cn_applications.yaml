@@ -92,13 +92,14 @@ spec:
                       properties:
                         deployerName:
                           type: string
+                        dynamicImage:
+                          type: boolean
                         image:
                           type: string
                         resourcePool:
                           type: string
                       required:
                       - deployerName
-                      - image
                       - resourcePool
                       type: object
                     type: array

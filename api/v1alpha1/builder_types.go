@@ -62,8 +62,9 @@ type BuilderContext struct {
 
 type DeployerHook struct {
 	DeployerName string `json:"deployerName"`
-	Image        string `json:"image"`
 	ResourcePool string `json:"resourcePool"`
+	Image        string `json:"image,omitempty"`
+	DynamicImage bool   `json:"dynamicImage,omitempty"`
 }
 
 // BuilderSpec defines the desired state of Builder
