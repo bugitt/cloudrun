@@ -78,13 +78,13 @@ func init() {
 	SchemeBuilder.Register(&Workflow{}, &WorkflowList{})
 }
 
-func (b *Workflow) CommonStatus() *types.CommonStatus {
-	if b.Status.Base == nil {
-		b.Status.Base = &types.CommonStatus{}
+func (w *Workflow) CommonStatus() *types.CommonStatus {
+	if w.Status.Base == nil {
+		w.Status.Base = &types.CommonStatus{}
 	}
-	return b.Status.Base
+	return w.Status.Base
 }
 
-func (b *Workflow) GetRound() int {
-	return b.Spec.Round
+func (w *Workflow) GetRound() int {
+	return w.Spec.Round
 }
