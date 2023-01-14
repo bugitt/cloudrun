@@ -33,9 +33,8 @@ func dockerfileConfigmapName(ctx core.Context) string {
 	return ctx.Name() + "-dockerfile"
 }
 
-func (ctx *Context) addRawDockerfileInitContainers(dockerfile string, podSpec *apiv1.PodSpec) error {
+func (ctx *Context) addRawDockerfileInitContainers(dockerfile string, podSpec *apiv1.PodSpec, dockerfilePath string) error {
 	const dockerfileVolumeName = "dockerfile"
-	const dockerfilePath = "Dockerfile"
 	configmap := &apiv1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      dockerfileConfigmapName(ctx),

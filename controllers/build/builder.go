@@ -24,6 +24,7 @@ import (
 	"github.com/bugitt/cloudrun/controllers/core"
 	"github.com/bugitt/cloudrun/types"
 	"github.com/go-logr/logr"
+	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	batchv1 "k8s.io/api/batch/v1"
 	apiv1 "k8s.io/api/core/v1"
@@ -103,12 +104,6 @@ func workspaceMount() apiv1.VolumeMount {
 	}
 }
 
-func (ctx *Context) FixBuilder() {
-	if ctx.Builder.Spec.Context.Raw != nil {
-		ctx.Builder.Spec.DockerfilePath = "Dockerfile"
-	}
-}
-
 func (ctx *Context) BackupState() error {
 	return core.BackupState(ctx.Builder, ctx.Builder.Spec)
 }
@@ -138,6 +133,11 @@ func (ctx *Context) TriggerDeployer() error {
 
 func (ctx *Context) NewJob() (*batchv1.Job, error) {
 	builder := ctx.Builder
+
+	dockerfilePath := builder.Spec.DockerfilePath
+	if builder.Spec.Context.Raw != nil {
+		dockerfilePath = uuid.NewString() + ".Dockerfile"
+	}
 
 	// workspaceVolume is an emptyDir to store the context dir
 	workspaceVolume := apiv1.Volume{
@@ -176,7 +176,7 @@ func (ctx *Context) NewJob() (*batchv1.Job, error) {
 		Name:  "main",
 		Image: kanikoImageName,
 		Args: []string{
-			"--dockerfile=" + builder.Spec.DockerfilePath,
+			"--dockerfile=" + dockerfilePath,
 			"--context=dir://" + filepath.Join("/workspace", builder.Spec.WorkspacePath),
 			"--destination=" + builder.Spec.Destination,
 		},
@@ -200,7 +200,7 @@ func (ctx *Context) NewJob() (*batchv1.Job, error) {
 	}
 
 	if builder.Spec.Context.Raw != nil {
-		if err := ctx.addRawDockerfileInitContainers(*(builder.Spec.Context.Raw), &podSpec); err != nil {
+		if err := ctx.addRawDockerfileInitContainers(*(builder.Spec.Context.Raw), &podSpec, dockerfilePath); err != nil {
 			return nil, errors.Wrap(err, "add raw init containers")
 		}
 	}
