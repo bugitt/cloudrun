@@ -25,6 +25,7 @@ type ResourceUsage struct {
 	Resource       *types.Resource       `json:"resource"`
 	TypeMeta       metav1.TypeMeta       `json:"typeMeta"`
 	NamespacedName *types.NamespacedName `json:"namespacedName"`
+	DisplayName    string                `json:"displayName"`
 }
 
 // ResourcePoolSpec defines the desired state of ResourcePool

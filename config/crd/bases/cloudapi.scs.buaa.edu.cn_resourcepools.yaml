@@ -62,6 +62,8 @@ spec:
               usage:
                 items:
                   properties:
+                    displayName:
+                      type: string
                     namespacedName:
                       properties:
                         name:
@@ -104,6 +106,7 @@ spec:
                           type: string
                       type: object
                   required:
+                  - displayName
                   - namespacedName
                   - resource
                   - typeMeta

@@ -65,6 +65,14 @@ func (ctx *Context) currentRound() int {
 	return ctx.Deployer.Status.Base.CurrentRound
 }
 
+func (ctx *Context) displayName() string {
+	name := ctx.Deployer.ObjectMeta.Labels["displayName"]
+	if len(name) == 0 {
+		name = ctx.Deployer.Name
+	}
+	return name
+}
+
 func (ctx *Context) GetCurrentResourcePool() (*v1alpha1.ResourcePool, error) {
 	resourcePoolName := ctx.Deployer.Status.ResourcePool
 	if resourcePoolName == "" {
@@ -145,6 +153,7 @@ func (ctx *Context) BegResource() error {
 			Namespace: deployer.Namespace,
 			Name:      deployer.Name,
 		},
+		DisplayName: ctx.displayName(),
 		Resource: &types.Resource{
 			CPU:    cpu,
 			Memory: memory,
