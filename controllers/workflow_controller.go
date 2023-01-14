@@ -18,7 +18,6 @@ package controllers
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -102,114 +101,6 @@ func (r *WorkflowReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		workflow.Status.Base.CurrentRound = workflow.Spec.Round
 		workflow.Status.Base.Status = types.StatusPending
 		return ctrl.Result{RequeueAfter: 1 * time.Second}, r.Status().Update(ctx, workflow)
-	}
-
-	status := workflow.Status.Base
-	switch status.Status {
-
-	case types.StatusUNDO:
-		workflow.Status.Base.Status = types.StatusPending
-		workflow.Status.Stage = cloudapiv1alpha1.WorkflowStagePending
-		return ctrl.Result{RequeueAfter: 1 * time.Second}, r.Status().Update(ctx, workflow)
-
-	case types.StatusPending:
-		workflow.Status.Base.Status = types.StatusDoing
-		workflow.Status.Stage = cloudapiv1alpha1.WorkflowStagePending
-		return ctrl.Result{RequeueAfter: 1 * time.Second}, r.Status().Update(ctx, workflow)
-
-	case types.StatusDoing:
-		switch workflow.Status.Stage {
-		case cloudapiv1alpha1.WorkflowStagePending:
-			workflow.Status.Stage = cloudapiv1alpha1.WorkflowStageBuilding
-			// setup all the builders
-			for _, builderName := range workflow.Spec.BuilderList {
-				builder := &cloudapiv1alpha1.Builder{}
-				err := r.Get(ctx, client.ObjectKey{Namespace: builderName.Namespace, Name: builderName.Name}, builder)
-				if err != nil {
-					logger.Error(err, "Failed to get Builder.")
-					return ctrl.Result{}, errors.Wrap(err, "failed to get builder")
-				}
-				builder.Spec.Round = builder.Status.Base.CurrentRound + 1
-				if err := r.Update(ctx, builder); err != nil {
-					logger.Error(err, "Failed to setup Builder.")
-					return ctrl.Result{}, errors.Wrap(err, "failed to setup builder")
-				}
-			}
-			return ctrl.Result{RequeueAfter: 1 * time.Second}, r.Status().Update(ctx, workflow)
-
-		case cloudapiv1alpha1.WorkflowStageBuilding:
-			failed, done := false, true
-			for _, builderName := range workflow.Spec.BuilderList {
-				builder := &cloudapiv1alpha1.Builder{}
-				err := r.Get(ctx, client.ObjectKey{Namespace: builderName.Namespace, Name: builderName.Name}, builder)
-				if err != nil {
-					logger.Error(err, "Failed to get Builder.")
-					return ctrl.Result{}, errors.Wrap(err, "failed to get builder")
-				}
-				builderStatus := builder.Status.Base.Status
-				if builderStatus == types.StatusFailed {
-					failed = true
-					break
-				}
-				if builderStatus != types.StatusDone {
-					done = false
-				}
-			}
-			if failed {
-				workflow.Status.Base.Status = types.StatusFailed
-				return ctrl.Result{}, r.Status().Update(ctx, workflow)
-			}
-			if done {
-				workflow.Status.Stage = cloudapiv1alpha1.WorkflowStageDeploying
-				// setup all the deployers
-				for _, deployerName := range workflow.Spec.DeployerList {
-					deployer := &cloudapiv1alpha1.Deployer{}
-					err := r.Get(ctx, client.ObjectKey{Namespace: deployerName.Namespace, Name: deployerName.Name}, deployer)
-					if err != nil {
-						logger.Error(err, "Failed to get Deployer.")
-						return ctrl.Result{}, errors.Wrap(err, "failed to get deployer")
-					}
-					deployer.Spec.Round = deployer.Status.Base.CurrentRound + 1
-					if err := r.Update(ctx, deployer); err != nil {
-						logger.Error(err, "Failed to setup Deployer.")
-						return ctrl.Result{}, errors.Wrap(err, "failed to setup deployer")
-					}
-				}
-				return ctrl.Result{RequeueAfter: 1 * time.Second}, r.Status().Update(ctx, workflow)
-			}
-
-		case cloudapiv1alpha1.WorkflowStageDeploying:
-			failed, done := false, true
-			for _, deployerName := range workflow.Spec.DeployerList {
-				deployer := &cloudapiv1alpha1.Deployer{}
-				err := r.Get(ctx, client.ObjectKey{Namespace: deployerName.Namespace, Name: deployerName.Name}, deployer)
-				if err != nil {
-					logger.Error(err, "Failed to get Deployer.")
-					return ctrl.Result{}, errors.Wrap(err, "failed to get deployer")
-				}
-				deployerStatus := deployer.Status.Base.Status
-				if deployerStatus == types.StatusFailed {
-					failed = true
-					break
-				}
-				if deployerStatus != types.StatusDone {
-					done = false
-				}
-			}
-			if failed {
-				workflow.Status.Base.Status = types.StatusFailed
-				return ctrl.Result{}, r.Status().Update(ctx, workflow)
-			}
-			if done {
-				workflow.Status.Stage = cloudapiv1alpha1.WorkflowStageServing
-				workflow.Status.Base.Status = types.StatusDone
-				return ctrl.Result{}, r.Status().Update(ctx, workflow)
-			}
-		}
-
-	case types.StatusDone, types.StatusFailed:
-		logger.Info(fmt.Sprintf("Workflow is done. Ignoring. Status: %s", status.Status))
-		return ctrl.Result{}, nil
 	}
 
 	return ctrl.Result{RequeueAfter: 5 * time.Second}, nil

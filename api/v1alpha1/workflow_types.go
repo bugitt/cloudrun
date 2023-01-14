@@ -39,9 +39,7 @@ const (
 // WorkflowSpec defines the desired state of Workflow
 type WorkflowSpec struct {
 	//+kubebuilder:default=-1
-	Round        int                    `json:"round,omitempty"`
-	BuilderList  []types.NamespacedName `json:"builderList"`
-	DeployerList []types.NamespacedName `json:"deployerList"`
+	Round int `json:"round,omitempty"`
 }
 
 // WorkflowStatus defines the observed state of Workflow
