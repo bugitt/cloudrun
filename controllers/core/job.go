@@ -51,7 +51,7 @@ func CreateAndWatchJob[T types.CloudRunCRD](
 		if err != nil {
 			return err
 		}
-		if err := ctx.CreateResource(job, false); err != nil {
+		if err := ctx.CreateResource(job, false, false); err != nil {
 			return err
 		}
 		return nil

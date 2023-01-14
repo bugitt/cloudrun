@@ -134,7 +134,7 @@ func (ctx *Context) createOrUpdateService() error {
 		return nil
 	}
 
-	return ctx.CreateResource(service, true)
+	return ctx.CreateResource(service, true, false)
 }
 
 func (ctx *Context) createDeployment() error {
@@ -148,5 +148,5 @@ func (ctx *Context) createDeployment() error {
 			Template: ctx.newPodSpec(),
 		},
 	}
-	return ctx.CreateResource(deployment, true)
+	return ctx.CreateResource(deployment, true, false)
 }

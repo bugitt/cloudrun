@@ -25,7 +25,7 @@ import (
 )
 
 type CloudRunCRDSpec interface {
-	v1alpha1.BuilderSpec | v1alpha1.DeployerSpec
+	v1alpha1.BuilderSpec | v1alpha1.DeployerSpec | v1alpha1.WorkflowSpec
 }
 
 type History[T CloudRunCRDSpec] struct {
@@ -36,10 +36,10 @@ type History[T CloudRunCRDSpec] struct {
 	EndTime   int64        `json:"endTime"`
 }
 
-func BackupState[T types.CloudRunCRD, S CloudRunCRDSpec](obj T, spec S) error {
+func CommonHistory[T types.CloudRunCRD, S CloudRunCRDSpec](obj T, spec S) (string, error) {
 	if obj.CommonStatus().CurrentRound == 0 {
 		// no need to backup
-		return nil
+		return "", nil
 	}
 	history := History[S]{
 		Round:     obj.CommonStatus().CurrentRound,
@@ -50,8 +50,19 @@ func BackupState[T types.CloudRunCRD, S CloudRunCRDSpec](obj T, spec S) error {
 	}
 	jsonBytes, err := json.Marshal(history)
 	if err != nil {
-		return errors.Wrap(err, "marshal history")
+		return "", errors.Wrap(err, "marshal history")
 	}
-	obj.CommonStatus().HistoryList = append(obj.CommonStatus().HistoryList, string(jsonBytes))
+	return string(jsonBytes), nil
+}
+
+func BackupState[T types.CloudRunCRD, S CloudRunCRDSpec](obj T, spec S) error {
+	history, err := CommonHistory(obj, spec)
+	if err != nil {
+		return err
+	}
+	if len(history) == 0 {
+		return nil
+	}
+	obj.CommonStatus().HistoryList = append(obj.CommonStatus().HistoryList, history)
 	return nil
 }

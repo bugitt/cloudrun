@@ -93,7 +93,7 @@ func (ctx *Context) GenerateWorkload() error {
 	if workflow.Spec.Build != nil {
 		if builder, err := ctx.newBuilder(); err != nil {
 			return err
-		} else if err := ctx.CreateResource(builder, true); err != nil {
+		} else if err := ctx.CreateResource(builder, false, true); err != nil {
 			return err
 		}
 	}
@@ -101,7 +101,7 @@ func (ctx *Context) GenerateWorkload() error {
 	if workflow.Spec.Deploy != nil {
 		if deployer, err := ctx.newDeployer(); err != nil {
 			return err
-		} else if err := ctx.CreateResource(deployer, true); err != nil {
+		} else if err := ctx.CreateResource(deployer, false, true); err != nil {
 			return err
 		}
 	}
@@ -140,6 +140,8 @@ func (ctx *Context) newBuilder() (*v1alpha1.Builder, error) {
 			DynamicImage: true,
 		},
 	}
+
+	builder.Spec.Round = workflow.Spec.Round
 
 	return builder, nil
 }
@@ -209,6 +211,10 @@ func (ctx *Context) newDeployer() (*v1alpha1.Deployer, error) {
 		container.WorkingDir = *deploy.WorkingDir
 	}
 	deployer.Spec.Containers = []v1alpha1.ContainerSpec{container}
+
+	if ctx.Workflow.Spec.Build == nil {
+		deployer.Spec.Round = ctx.Workflow.Spec.Round
+	}
 
 	return deployer, nil
 }

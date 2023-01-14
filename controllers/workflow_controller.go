@@ -25,10 +25,14 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
+	"github.com/bugitt/cloudrun/api/v1alpha1"
 	cloudapiv1alpha1 "github.com/bugitt/cloudrun/api/v1alpha1"
+	"github.com/bugitt/cloudrun/controllers/core"
 	"github.com/bugitt/cloudrun/controllers/finalize"
+	workflowcore "github.com/bugitt/cloudrun/controllers/workflow"
 	"github.com/bugitt/cloudrun/types"
 	"github.com/pkg/errors"
+	ktypes "k8s.io/apimachinery/pkg/types"
 )
 
 // WorkflowReconciler reconciles a Workflow object
@@ -47,12 +51,12 @@ type WorkflowReconciler struct {
 //+kubebuilder:rbac:groups=cloudapi.scs.buaa.edu.cn,resources=deployers/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=cloudapi.scs.buaa.edu.cn,resources=deployers/finalizers,verbs=update
 
-func (r *WorkflowReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	logger := log.FromContext(ctx, "workflow", req.NamespacedName)
+func (r *WorkflowReconciler) Reconcile(originalCtx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	logger := log.FromContext(originalCtx, "workflow", req.NamespacedName)
 
 	workflow := &cloudapiv1alpha1.Workflow{}
 
-	err := r.Get(ctx, req.NamespacedName, workflow)
+	err := r.Get(originalCtx, req.NamespacedName, workflow)
 	if err != nil {
 		if client.IgnoreNotFound(err) == nil {
 			logger.Info("Workflow resource not found. Ignoring since object must be deleted.")
@@ -62,15 +66,29 @@ func (r *WorkflowReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		return ctrl.Result{}, errors.Wrap(err, "failed to get workflow")
 	}
 
+	ctx := workflowcore.NewContext(
+		originalCtx,
+		r.Client,
+		logger,
+		workflow,
+	)
+
+	defer func() {
+		if re := recover(); re != nil {
+			logger.Error(re.(error), "Reconcile panic")
+			core.PublishStatus(ctx, workflow, re.(error))
+		}
+	}()
+
 	isToBeDeleted := workflow.GetDeletionTimestamp() != nil
 	if isToBeDeleted {
 		if finalize.Contains(workflow) {
-			if err := r.finalizeWorkflow(ctx); err != nil {
+			if err := r.finalizeWorkflow(originalCtx); err != nil {
 				return ctrl.Result{}, errors.Wrap(err, "failed to finalize workflow")
 			}
 
 			finalize.Remove(workflow)
-			err := r.Update(ctx, workflow)
+			err := r.Update(originalCtx, workflow)
 			if err != nil {
 				return ctrl.Result{}, errors.Wrap(err, "failed to update workflow")
 			}
@@ -80,7 +98,7 @@ func (r *WorkflowReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 
 	if !finalize.Contains(workflow) {
 		finalize.Add(workflow)
-		if err := r.Update(ctx, workflow); err != nil {
+		if err := r.Update(originalCtx, workflow); err != nil {
 			logger.Error(err, "Failed to update Workflow after add finalizer")
 			return ctrl.Result{}, errors.Wrap(err, "failed to update workflow")
 		}
@@ -88,20 +106,64 @@ func (r *WorkflowReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 
 	if workflow.Status.Base == nil {
 		workflow.Status.Base = &types.CommonStatus{}
-		return ctrl.Result{RequeueAfter: 1 * time.Second}, r.Status().Update(ctx, workflow)
+		return ctrl.Result{RequeueAfter: 1 * time.Second}, r.Status().Update(originalCtx, workflow)
 	}
 
-	if workflow.Spec.Round == -1 {
+	if workflow.Spec.Round < workflow.CommonStatus().CurrentRound {
 		logger.Info("Builder is not ready. Ignoring.")
+		if err := ctx.GenerateWorkload(); err != nil {
+			return ctrl.Result{}, errors.Wrap(err, "failed to generate workload")
+		}
 		workflow.Status.Base.Status = types.StatusUNDO
-		return ctrl.Result{}, r.Status().Update(ctx, workflow)
+		workflow.Status.Stage = v1alpha1.WorkflowStagePending
+		return ctrl.Result{}, r.Status().Update(originalCtx, workflow)
 	}
 
-	if workflow.Status.Base.CurrentRound < workflow.Spec.Round {
-		workflow.Status.Base.CurrentRound = workflow.Spec.Round
-		workflow.Status.Base.Status = types.StatusPending
-		return ctrl.Result{RequeueAfter: 1 * time.Second}, r.Status().Update(ctx, workflow)
+	if workflow.Spec.Round > workflow.CommonStatus().CurrentRound {
+		if err := core.BackupState(workflow, workflow.Spec); err != nil {
+			ctx.Error(err, "Failed to backup state")
+			return ctrl.Result{}, errors.Wrap(err, "failed to backup state")
+		}
+		if err := ctx.GenerateWorkload(); err != nil {
+			return ctrl.Result{}, errors.Wrap(err, "failed to generate workload")
+		}
+		workflow.Status.Stage = v1alpha1.WorkflowStagePending
+		workflow.CommonStatus().Status = types.StatusPending
+		workflow.CommonStatus().CurrentRound = workflow.Spec.Round
+		workflow.CommonStatus().StartTime = time.Now().Unix()
+		workflow.CommonStatus().EndTime = 0
+
+		return ctrl.Result{RequeueAfter: 1 * time.Second}, r.Status().Update(originalCtx, workflow)
 	}
+
+	builder := &cloudapiv1alpha1.Builder{}
+	if err := ctx.Get(ctx, ktypes.NamespacedName{Name: ctx.Name(), Namespace: ctx.Namespace()}, builder); err != nil {
+		if client.IgnoreNotFound(err) == nil {
+			builder = nil
+		} else {
+			return ctrl.Result{}, errors.Wrap(err, "failed to get builder")
+		}
+	}
+
+	deployer := &cloudapiv1alpha1.Deployer{}
+	if err := ctx.Get(ctx, ktypes.NamespacedName{Name: ctx.Name(), Namespace: ctx.Namespace()}, deployer); err != nil {
+		return ctrl.Result{}, errors.Wrap(err, "failed to get deployer")
+	}
+
+	if builder == nil {
+		workflow.CommonStatus().Status = deployer.CommonStatus().Status
+	} else {
+		if builder.CommonStatus().Status == types.StatusDoing {
+			workflow.CommonStatus().Status = types.StatusDoing
+		} else if builder.CommonStatus().HashDone() {
+			workflow.CommonStatus().Status = deployer.CommonStatus().Status
+			if !workflow.CommonStatus().HasStarted() {
+				workflow.CommonStatus().Status = types.StatusDoing
+			}
+		}
+	}
+
+	core.PublishStatus(ctx, workflow, nil)
 
 	return ctrl.Result{RequeueAfter: 5 * time.Second}, nil
 }

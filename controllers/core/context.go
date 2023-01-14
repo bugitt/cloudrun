@@ -46,7 +46,7 @@ type Context interface {
 
 	GetServiceLabels() map[string]string
 
-	CreateResource(obj client.Object, force bool) error
+	CreateResource(obj client.Object, force, update bool) error
 	GetSubResource(obj client.Object, round int) (bool, error)
 }
 
@@ -100,7 +100,7 @@ func setOwnerReference(obj client.Object, ownerRef apimetav1.OwnerReference) {
 	obj.SetOwnerReferences(refList)
 }
 
-func (ctx *DefaultContext) CreateResource(obj client.Object, force bool) error {
+func (ctx *DefaultContext) CreateResource(obj client.Object, force, update bool) error {
 	// set the owner reference
 	ownerRef, err := ctx.GetOwnerReferences()
 	if err != nil {
@@ -127,6 +127,12 @@ func (ctx *DefaultContext) CreateResource(obj client.Object, force bool) error {
 		exist = true
 	}
 	if exist && !force {
+		return nil
+	} else if exist && update {
+		if err := ctx.Update(ctx, obj); err != nil {
+			ctx.Error(err, fmt.Sprintf("Failed to update %s %s/%s", obj.GetObjectKind().GroupVersionKind().Kind, obj.GetNamespace(), obj.GetName()))
+			return errors.Wrap(err, fmt.Sprintf("failed to update %s %s/%s", obj.GetObjectKind().GroupVersionKind().Kind, obj.GetNamespace(), obj.GetName()))
+		}
 		return nil
 	} else if exist && force {
 		if err := ctx.Delete(ctx, obj); err != nil {

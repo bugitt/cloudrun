@@ -45,7 +45,7 @@ func (ctx *Context) addRawDockerfileInitContainers(dockerfile string, podSpec *a
 			dockerfilePath: dockerfile,
 		},
 	}
-	if err := ctx.CreateResource(configmap, true); err != nil {
+	if err := ctx.CreateResource(configmap, true, false); err != nil {
 		return errors.Wrap(err, "create configmap for dockerfile")
 	}
 
