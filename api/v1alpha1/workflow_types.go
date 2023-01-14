@@ -36,10 +36,41 @@ const (
 	WorkflowStageServing WorkflowStage = "Serving"
 )
 
+type BuildSpec struct {
+	Context          BuilderContext `json:"context"`
+	BaseImage        string         `json:"baseImage"`
+	WorkingDir       *string        `json:"workingDir,omitempty"`
+	Command          string         `json:"command"`
+	RegistryLocation string         `json:"registryLocation"`
+	//+kubebuilder:default:=push-secret
+	PushSecretName *string `json:"pushSecretName,omitempty"`
+}
+
+type FilePair struct {
+	Source string `json:"source"`
+	Target string `json:"target"`
+}
+
+type DeploySpec struct {
+	ChangeEnv    bool              `json:"changeEnv,omitempty"`
+	FilePair     *FilePair         `json:"filePair,omitempty"`
+	BaseImage    *string           `json:"baseImage,omitempty"`
+	Command      *string           `json:"command,omitempty"`
+	ResourcePool string            `json:"resourcePool"`
+	Resource     ContainerResource `json:"resource"`
+	WorkingDir   *string           `json:"workingDir,omitempty"`
+	//+kubebuilder:validation:Enum=job;service
+	Type  DeployType `json:"type"`
+	Ports []Port     `json:"ports,omitempty"`
+}
+
 // WorkflowSpec defines the desired state of Workflow
 type WorkflowSpec struct {
 	//+kubebuilder:default=-1
 	Round int `json:"round,omitempty"`
+
+	Build  *BuildSpec  `json:"build,omitempty"`
+	Deploy *DeploySpec `json:"deploy"`
 }
 
 // WorkflowStatus defines the observed state of Workflow
