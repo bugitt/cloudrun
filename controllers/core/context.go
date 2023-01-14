@@ -47,7 +47,7 @@ type Context interface {
 	GetServiceLabels() map[string]string
 
 	CreateResource(obj client.Object, force bool) error
-	GetResource(obj client.Object, round int) (bool, error)
+	GetSubResource(obj client.Object, round int) (bool, error)
 }
 
 type DefaultContext struct {
@@ -141,7 +141,7 @@ func (ctx *DefaultContext) CreateResource(obj client.Object, force bool) error {
 	return nil
 }
 
-func (ctx *DefaultContext) GetResource(obj client.Object, round int) (bool, error) {
+func (ctx *DefaultContext) GetSubResource(obj client.Object, round int) (bool, error) {
 	name := fmt.Sprintf("%s-%d", ctx.Name(), round)
 	if err := ctx.Get(ctx, ktypes.NamespacedName{Namespace: ctx.Namespace(), Name: name}, obj); err != nil {
 		if client.IgnoreNotFound(err) != nil {

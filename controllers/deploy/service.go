@@ -34,7 +34,7 @@ func (ctx *Context) handleService() error {
 
 	// 1. check if the service is already running
 	deployment := new(appsv1.Deployment)
-	exist, err := ctx.GetResource(deployment, ctx.currentRound())
+	exist, err := ctx.GetSubResource(deployment, ctx.currentRound())
 	if err != nil {
 		return errors.Wrap(err, "failed to get deployment for service type")
 	}
@@ -69,7 +69,7 @@ func (ctx *Context) handleService() error {
 
 func (ctx *Context) deleteDeployment() error {
 	deployment := &appsv1.Deployment{}
-	if exist, err := ctx.GetResource(deployment, ctx.currentRound()); err != nil {
+	if exist, err := ctx.GetSubResource(deployment, ctx.currentRound()); err != nil {
 		return err
 	} else if exist {
 		if err := ctx.Delete(ctx, deployment); err != nil {
@@ -81,7 +81,7 @@ func (ctx *Context) deleteDeployment() error {
 
 func (ctx *Context) createOrUpdateService() error {
 	service := new(corev1.Service)
-	exist, err := ctx.GetResource(service, ctx.currentRound())
+	exist, err := ctx.GetSubResource(service, ctx.currentRound())
 	if err != nil {
 		return errors.Wrap(err, "failed to get service for service type")
 	}

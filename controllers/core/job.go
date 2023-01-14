@@ -86,7 +86,7 @@ func CreateAndWatchJob[T types.CloudRunCRD](
 
 func GetJob(ctx Context, round int) (*batchv1.Job, error) {
 	job := new(batchv1.Job)
-	exist, err := ctx.GetResource(job, round)
+	exist, err := ctx.GetSubResource(job, round)
 	if err != nil {
 		return nil, err
 	} else if !exist {
