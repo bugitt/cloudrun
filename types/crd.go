@@ -23,7 +23,6 @@ type DecodeFunc func(string) (CloudRunCRD, error)
 type CloudRunCRD interface {
 	client.Object
 
-	GetDecoder() DecodeFunc
 	GetRound() int
 	CommonStatus() *CommonStatus
 }

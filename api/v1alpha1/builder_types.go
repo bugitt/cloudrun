@@ -17,10 +17,7 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"encoding/json"
-
 	"github.com/bugitt/cloudrun/types"
-	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -114,16 +111,6 @@ type BuilderList struct {
 
 func init() {
 	SchemeBuilder.Register(&Builder{}, &BuilderList{})
-}
-
-func (b *Builder) GetDecoder() types.DecodeFunc {
-	return func(str string) (types.CloudRunCRD, error) {
-		obj := new(Builder)
-		if err := json.Unmarshal([]byte(str), obj); err != nil {
-			return nil, errors.Wrap(err, "unmarshal builder error")
-		}
-		return obj, nil
-	}
 }
 
 func (b *Builder) CommonStatus() *types.CommonStatus {
