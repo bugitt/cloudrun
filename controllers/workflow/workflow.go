@@ -38,6 +38,7 @@ const workspaceAbsPath = "/workspace"
 const dockerfileCompileStageTemplate = `
 FROM {{.BaseImage}}
 WORKDIR {{.WorkingDir}}
+COPY . .
 RUN {{.Command}}
 
 `
