@@ -31,6 +31,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ktypes "k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/util/retry"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -87,87 +88,87 @@ func (ctx *Context) GetCurrentResourcePool() (*v1alpha1.ResourcePool, error) {
 
 func (ctx *Context) ReleaseResource() error {
 	deployer := ctx.Deployer
-	// release the resource usage
-	resourcePool, err := ctx.GetCurrentResourcePool()
-	if err != nil {
-		return err
-	}
-	if resourcePool == nil {
-		return nil
-	}
-	targetIndex := -1
-	for i, usage := range resourcePool.Spec.Usage {
-		if usage.TypeMeta.APIVersion == deployer.APIVersion && usage.TypeMeta.Kind == deployer.Kind {
-			if usage.NamespacedName.Name == deployer.Name && usage.NamespacedName.Namespace == deployer.Namespace {
-				targetIndex = i
-				break
+	return retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		// release the resource usage
+		resourcePool, err := ctx.GetCurrentResourcePool()
+		if err != nil {
+			return err
+		}
+		if resourcePool == nil {
+			return nil
+		}
+		targetIndex := -1
+		for i, usage := range resourcePool.Spec.Usage {
+			if usage.TypeMeta.APIVersion == deployer.APIVersion && usage.TypeMeta.Kind == deployer.Kind {
+				if usage.NamespacedName.Name == deployer.Name && usage.NamespacedName.Namespace == deployer.Namespace {
+					targetIndex = i
+					break
+				}
 			}
 		}
-	}
-	if targetIndex == -1 {
-		return nil
-	}
-	usage := resourcePool.Spec.Usage[targetIndex]
-	resourcePool.Spec.Usage = append(resourcePool.Spec.Usage[:targetIndex], resourcePool.Spec.Usage[targetIndex+1:]...)
-	resourcePool.Spec.Free.CPU = resourcePool.Spec.Free.CPU + (usage.Resource.CPU)
-	resourcePool.Spec.Free.Memory = resourcePool.Spec.Free.Memory + (usage.Resource.Memory)
-	return ctx.Update(ctx, resourcePool)
+		if targetIndex == -1 {
+			return nil
+		}
+		resourcePool.Spec.Usage = append(resourcePool.Spec.Usage[:targetIndex], resourcePool.Spec.Usage[targetIndex+1:]...)
+		return ctx.Context.Update(ctx, resourcePool)
+	})
 }
 
 func (ctx *Context) BegResource() error {
 	deployer := ctx.Deployer
-	var (
-		cpu    int32
-		memory int32
-	)
-	for _, container := range deployer.Spec.Containers {
-		resource := container.Resource
-		cpu += resource.CPU
-		memory += resource.Memory
-	}
-	resourcePool := &v1alpha1.ResourcePool{}
-	if err := ctx.Get(ctx, ktypes.NamespacedName{Name: deployer.Spec.ResourcePool}, resourcePool); err != nil {
-		return errors.Wrap(err, "get resource pool")
-	}
-	targetIndex := -1
-	for i, usage := range resourcePool.Spec.Usage {
-		if usage.TypeMeta.APIVersion == deployer.APIVersion && usage.TypeMeta.Kind == deployer.Kind {
-			if usage.NamespacedName.Name == deployer.Name && usage.NamespacedName.Namespace == deployer.Namespace {
-				targetIndex = i
-				break
+	err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		var (
+			cpu    int32
+			memory int32
+		)
+		for _, container := range deployer.Spec.Containers {
+			resource := container.Resource
+			cpu += resource.CPU
+			memory += resource.Memory
+		}
+		resourcePool := &v1alpha1.ResourcePool{}
+		if err := ctx.Get(ctx, ktypes.NamespacedName{Name: deployer.Spec.ResourcePool}, resourcePool); err != nil {
+			return errors.Wrap(err, "get resource pool")
+		}
+		targetIndex := -1
+		for i, usage := range resourcePool.Spec.Usage {
+			if usage.TypeMeta.APIVersion == deployer.APIVersion && usage.TypeMeta.Kind == deployer.Kind {
+				if usage.NamespacedName.Name == deployer.Name && usage.NamespacedName.Namespace == deployer.Namespace {
+					targetIndex = i
+					break
+				}
 			}
 		}
-	}
-	if targetIndex != -1 {
-		usage := resourcePool.Spec.Usage[targetIndex]
-		if resource := usage.Resource; resource.CPU == cpu && resource.Memory == memory {
-			return nil
+		if targetIndex != -1 {
+			usage := resourcePool.Spec.Usage[targetIndex]
+			if resource := usage.Resource; resource.CPU == cpu && resource.Memory == memory {
+				return nil
+			}
+			if ctx.ReleaseResource() != nil {
+				return errors.New("release old resource when try to beg new resource")
+			}
 		}
-		if ctx.ReleaseResource() != nil {
-			return errors.New("release old resource when try to beg new resource")
+		resourcePool.Spec.Usage = append(resourcePool.Spec.Usage, v1alpha1.ResourceUsage{
+			TypeMeta: deployer.TypeMeta,
+			NamespacedName: &types.NamespacedName{
+				Namespace: deployer.Namespace,
+				Name:      deployer.Name,
+			},
+			DisplayName: ctx.displayName(),
+			Resource: &types.Resource{
+				CPU:    cpu,
+				Memory: memory,
+			},
+		})
+		if resourcePool.Status.Free.CPU < cpu || resourcePool.Status.Free.Memory < memory {
+			deployer.CommonStatus().Status = types.StatusFailed
+			return errors.New("resource pool is not enough")
 		}
-	}
-	resourcePool.Spec.Usage = append(resourcePool.Spec.Usage, v1alpha1.ResourceUsage{
-		TypeMeta: deployer.TypeMeta,
-		NamespacedName: &types.NamespacedName{
-			Namespace: deployer.Namespace,
-			Name:      deployer.Name,
-		},
-		DisplayName: ctx.displayName(),
-		Resource: &types.Resource{
-			CPU:    cpu,
-			Memory: memory,
-		},
-	})
-	resourcePool.Spec.Free.CPU = resourcePool.Spec.Free.CPU - cpu
-	resourcePool.Spec.Free.Memory = resourcePool.Spec.Free.Memory - memory
-	if resourcePool.Spec.Free.CPU < 0 || resourcePool.Spec.Free.Memory < 0 {
-		deployer.CommonStatus().Status = types.StatusFailed
-		return errors.New("resource pool is not enough")
-	}
 
-	if err := ctx.Update(ctx, resourcePool); err != nil {
-		return errors.Wrap(err, "update resource pool")
+		return ctx.Update(ctx, resourcePool)
+	})
+	if err != nil {
+		return errors.Wrap(err, "beg resource")
 	}
 	deployer.Status.ResourcePool = deployer.Spec.ResourcePool
 	return nil

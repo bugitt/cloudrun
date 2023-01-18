@@ -47,18 +47,6 @@ spec:
                 - cpu
                 - memory
                 type: object
-              free:
-                properties:
-                  cpu:
-                    format: int32
-                    type: integer
-                  memory:
-                    format: int32
-                    type: integer
-                required:
-                - cpu
-                - memory
-                type: object
               usage:
                 items:
                   properties:
@@ -114,11 +102,25 @@ spec:
                 type: array
             required:
             - capacity
-            - free
             - usage
             type: object
           status:
             description: ResourcePoolStatus defines the observed state of ResourcePool
+            properties:
+              free:
+                properties:
+                  cpu:
+                    format: int32
+                    type: integer
+                  memory:
+                    format: int32
+                    type: integer
+                required:
+                - cpu
+                - memory
+                type: object
+            required:
+            - free
             type: object
         type: object
     served: true

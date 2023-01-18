@@ -60,16 +60,18 @@ func (r *ResourcePoolReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		used.CPU += usage.Resource.CPU
 		used.Memory += usage.Resource.Memory
 	}
-	if used.CPU+resourcePool.Spec.Free.CPU != resourcePool.Spec.Capacity.CPU {
-		logger.Error(nil, "CPU usage is not equal to capacity.")
-		return ctrl.Result{}, errors.New("CPU usage is not equal to capacity")
+	resourcePool.Status.Free.CPU = resourcePool.Spec.Capacity.CPU - used.CPU
+	resourcePool.Status.Free.Memory = resourcePool.Spec.Capacity.Memory - used.Memory
+	if resourcePool.Status.Free.CPU < 0 {
+		logger.Error(nil, "CPU usage is not enough.")
+		return ctrl.Result{}, errors.New("CPU usage is not enough")
 	}
-	if used.Memory+resourcePool.Spec.Free.Memory != resourcePool.Spec.Capacity.Memory {
-		logger.Error(nil, "Memory usage is not equal to capacity.")
-		return ctrl.Result{}, errors.New("Memory usage is not equal to capacity")
+	if resourcePool.Status.Free.Memory < 0 {
+		logger.Error(nil, "Memory usage is not enough.")
+		return ctrl.Result{}, errors.New("Memory usage is not enough")
 	}
 
-	return ctrl.Result{}, nil
+	return ctrl.Result{}, r.Status().Update(ctx, resourcePool)
 }
 
 // SetupWithManager sets up the controller with the Manager.
