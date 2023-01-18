@@ -56,7 +56,7 @@ func (r *ResourcePoolReconciler) Reconcile(ctx context.Context, req ctrl.Request
 
 	// check validation of the resource pool
 	used := &types.Resource{}
-	for _, usage := range resourcePool.Spec.Usage {
+	for _, usage := range resourcePool.Status.Usage {
 		used.CPU += usage.Resource.CPU
 		used.Memory += usage.Resource.Memory
 	}

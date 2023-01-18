@@ -13,6 +13,3 @@ spec:
     cpu: 2000
     memory: 4096
   usage: []
-  free:
-    cpu: 2000
-    memory: 4096

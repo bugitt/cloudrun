@@ -98,7 +98,7 @@ func (ctx *Context) ReleaseResource() error {
 			return nil
 		}
 		targetIndex := -1
-		for i, usage := range resourcePool.Spec.Usage {
+		for i, usage := range resourcePool.Status.Usage {
 			if usage.TypeMeta.APIVersion == deployer.APIVersion && usage.TypeMeta.Kind == deployer.Kind {
 				if usage.NamespacedName.Name == deployer.Name && usage.NamespacedName.Namespace == deployer.Namespace {
 					targetIndex = i
@@ -109,8 +109,8 @@ func (ctx *Context) ReleaseResource() error {
 		if targetIndex == -1 {
 			return nil
 		}
-		resourcePool.Spec.Usage = append(resourcePool.Spec.Usage[:targetIndex], resourcePool.Spec.Usage[targetIndex+1:]...)
-		return ctx.Context.Update(ctx, resourcePool)
+		resourcePool.Status.Usage = append(resourcePool.Status.Usage[:targetIndex], resourcePool.Status.Usage[targetIndex+1:]...)
+		return ctx.Context.Status().Update(ctx, resourcePool)
 	})
 }
 
@@ -131,7 +131,7 @@ func (ctx *Context) BegResource() error {
 			return errors.Wrap(err, "get resource pool")
 		}
 		targetIndex := -1
-		for i, usage := range resourcePool.Spec.Usage {
+		for i, usage := range resourcePool.Status.Usage {
 			if usage.TypeMeta.APIVersion == deployer.APIVersion && usage.TypeMeta.Kind == deployer.Kind {
 				if usage.NamespacedName.Name == deployer.Name && usage.NamespacedName.Namespace == deployer.Namespace {
 					targetIndex = i
@@ -140,7 +140,7 @@ func (ctx *Context) BegResource() error {
 			}
 		}
 		if targetIndex != -1 {
-			usage := resourcePool.Spec.Usage[targetIndex]
+			usage := resourcePool.Status.Usage[targetIndex]
 			if resource := usage.Resource; resource.CPU == cpu && resource.Memory == memory {
 				return nil
 			}
@@ -148,7 +148,7 @@ func (ctx *Context) BegResource() error {
 				return errors.New("release old resource when try to beg new resource")
 			}
 		}
-		resourcePool.Spec.Usage = append(resourcePool.Spec.Usage, v1alpha1.ResourceUsage{
+		resourcePool.Status.Usage = append(resourcePool.Status.Usage, v1alpha1.ResourceUsage{
 			TypeMeta: deployer.TypeMeta,
 			NamespacedName: &types.NamespacedName{
 				Namespace: deployer.Namespace,
@@ -165,7 +165,7 @@ func (ctx *Context) BegResource() error {
 			return errors.New("resource pool is not enough")
 		}
 
-		return ctx.Update(ctx, resourcePool)
+		return ctx.Context.Status().Update(ctx, resourcePool)
 	})
 	if err != nil {
 		return errors.Wrap(err, "beg resource")
