@@ -37,11 +37,12 @@ const (
 )
 
 type BuildSpec struct {
-	Context          BuilderContext `json:"context"`
-	BaseImage        string         `json:"baseImage"`
-	WorkingDir       *string        `json:"workingDir,omitempty"`
-	Command          string         `json:"command"`
-	RegistryLocation string         `json:"registryLocation"`
+	Context   BuilderContext `json:"context"`
+	BaseImage string         `json:"baseImage"`
+	//+kubebuilder:default:=/workspace
+	WorkingDir       *string `json:"workingDir,omitempty"`
+	Command          string  `json:"command"`
+	RegistryLocation string  `json:"registryLocation"`
 	//+kubebuilder:default:=push-secret
 	PushSecretName *string `json:"pushSecretName,omitempty"`
 }

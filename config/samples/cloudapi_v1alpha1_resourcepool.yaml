@@ -12,4 +12,3 @@ spec:
   capacity: 
     cpu: 2000
     memory: 4096
-  usage: []
