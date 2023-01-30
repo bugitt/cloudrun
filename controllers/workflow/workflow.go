@@ -186,7 +186,7 @@ func (ctx *Context) getDockerfile() (string, error) {
 	}
 
 	if deploy.Command != nil {
-		dockerfile += fmt.Sprintf(`CMD ["%s"]`, *deploy.Command)
+		dockerfile += fmt.Sprintf(`CMD %s`, *deploy.Command)
 	}
 
 	return dockerfile, nil
