@@ -139,6 +139,7 @@ func (ctx *Context) newBuilder() (*v1alpha1.Builder, error) {
 			DeployerName: ctx.Name(),
 			ResourcePool: workflow.Spec.Deploy.ResourcePool,
 			DynamicImage: true,
+			ForceRound:   true,
 		},
 	}
 

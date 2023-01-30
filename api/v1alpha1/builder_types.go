@@ -62,6 +62,7 @@ type DeployerHook struct {
 	ResourcePool string `json:"resourcePool"`
 	Image        string `json:"image,omitempty"`
 	DynamicImage bool   `json:"dynamicImage,omitempty"`
+	ForceRound   bool   `json:"forceRound,omitempty"`
 }
 
 // BuilderSpec defines the desired state of Builder

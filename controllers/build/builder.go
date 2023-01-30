@@ -117,7 +117,11 @@ func (ctx *Context) TriggerDeployer() error {
 			}
 			return errors.Wrapf(err, "get deployer %s when try to trigger it", hook.DeployerName)
 		}
-		deployer.Spec.Round = deployer.CommonStatus().CurrentRound + 1
+		if hook.ForceRound {
+			deployer.Spec.Round = ctx.Builder.GetRound()
+		} else {
+			deployer.Spec.Round = deployer.CommonStatus().CurrentRound + 1
+		}
 		if hook.DynamicImage {
 			deployer.Spec.Containers[0].Image = ctx.Builder.Spec.Destination
 		} else {

@@ -94,6 +94,8 @@ spec:
                           type: string
                         dynamicImage:
                           type: boolean
+                        forceRound:
+                          type: boolean
                         image:
                           type: string
                         resourcePool:
