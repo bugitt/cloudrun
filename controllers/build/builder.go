@@ -44,14 +44,14 @@ const (
 
 	prepareContextTarVolumeMountPath = "/prepare-context"
 	workspaceVolumeMountPath         = "/workspace"
-	pushSecretVolumeMountPath        = "/kaniko/.docker/"
+	pushSecretVolumeMountPath        = "/home/user/.docker/"
 )
 
 const (
-	s3CmdImageName  = "loheagn/ls3md:1.0.0"
-	unzipImageName  = "loheagn/go-unarr:0.1.6"
-	gitImageName    = "bitnami/git:2.39.0"
-	kanikoImageName = "scs.buaa.edu.cn:8081/iobs/kaniko-executor"
+	s3CmdImageName   = "loheagn/ls3md:1.0.0"
+	unzipImageName   = "loheagn/go-unarr:0.1.6"
+	gitImageName     = "bitnami/git:2.39.0"
+	builderImageName = "scs.buaa.edu.cn:8081/iobs/buildkit:master-rootless"
 )
 
 const (
@@ -178,12 +178,39 @@ func (ctx *Context) NewJob() (*batchv1.Job, error) {
 
 	mainContainer := apiv1.Container{
 		Name:  "main",
-		Image: kanikoImageName,
-		Args: []string{
-			"--dockerfile=" + dockerfilePath,
-			"--context=dir://" + filepath.Join("/workspace", builder.Spec.WorkspacePath),
-			"--destination=" + builder.Spec.Destination,
+		Image: builderImageName,
+		Env: []apiv1.EnvVar{
+			{
+				Name:  "BUILDKITD_FLAGS",
+				Value: "--oci-worker-no-process-sandbox",
+			},
+			{
+				Name:  "DOCKER_CONFIG",
+				Value: pushSecretVolumeMountPath,
+			},
 		},
+		Command: []string{"buildctl-daemonless.sh"},
+		Args: []string{
+			"build",
+			"--frontend",
+			"dockerfile.v0",
+			"--local",
+			"context=" + filepath.Join("/workspace", builder.Spec.WorkspacePath),
+			"--local",
+			"dockerfile=" + filepath.Join("/workspace", builder.Spec.WorkspacePath),
+			"--output",
+			"type=image,name=" + builder.Spec.Destination + ",push=true",
+			"--opt",
+			"filename=" + dockerfilePath,
+		},
+		SecurityContext: &apiv1.SecurityContext{
+			SeccompProfile: &apiv1.SeccompProfile{
+				Type: apiv1.SeccompProfileTypeUnconfined,
+			},
+			RunAsUser:  core.Ptr(int64(1000)),
+			RunAsGroup: core.Ptr(int64(1000)),
+		},
+
 		VolumeMounts: []apiv1.VolumeMount{workspaceMount(), pushSecretVolumeMount},
 	}
 
