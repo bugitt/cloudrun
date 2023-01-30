@@ -112,7 +112,6 @@ spec:
                   registryLocation:
                     type: string
                   workingDir:
-                    default: /workspace
                     type: string
                 required:
                 - baseImage
