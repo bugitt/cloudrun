@@ -26,6 +26,7 @@ import (
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	ktypes "k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/util/retry"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 )
@@ -126,18 +127,30 @@ func (ctx *DefaultContext) CreateResource(obj client.Object, force, update bool)
 	} else {
 		exist = true
 	}
-	if exist && !force {
-		return nil
-	} else if exist && update {
-		if err := ctx.Update(ctx, obj); err != nil {
-			ctx.Error(err, fmt.Sprintf("Failed to update %s %s/%s", obj.GetObjectKind().GroupVersionKind().Kind, obj.GetNamespace(), obj.GetName()))
-			return errors.Wrap(err, fmt.Sprintf("failed to update %s %s/%s", obj.GetObjectKind().GroupVersionKind().Kind, obj.GetNamespace(), obj.GetName()))
+	if exist {
+		if update {
+			err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+				err = ctx.Get(ctx, ktypes.NamespacedName{Name: obj.GetName(), Namespace: obj.GetNamespace()}, placeHolder)
+				if err != nil {
+					return err
+				}
+				obj.SetResourceVersion(placeHolder.GetResourceVersion())
+				return ctx.Update(ctx, obj)
+			})
+			if err != nil {
+				ctx.Error(err, fmt.Sprintf("Failed to update %s %s/%s", obj.GetObjectKind().GroupVersionKind().Kind, obj.GetNamespace(), obj.GetName()))
+				return errors.Wrap(err, fmt.Sprintf("failed to update %s %s/%s", obj.GetObjectKind().GroupVersionKind().Kind, obj.GetNamespace(), obj.GetName()))
+			}
+			return nil
 		}
-		return nil
-	} else if exist && force {
-		if err := ctx.Delete(ctx, obj); err != nil {
-			ctx.Error(err, fmt.Sprintf("Failed to delete %s %s/%s", obj.GetObjectKind().GroupVersionKind().Kind, obj.GetNamespace(), obj.GetName()))
-			return errors.Wrap(err, fmt.Sprintf("failed to delete %s %s/%s", obj.GetObjectKind().GroupVersionKind().Kind, obj.GetNamespace(), obj.GetName()))
+
+		if force {
+			if err := ctx.Delete(ctx, obj); err != nil {
+				ctx.Error(err, fmt.Sprintf("Failed to delete %s %s/%s", obj.GetObjectKind().GroupVersionKind().Kind, obj.GetNamespace(), obj.GetName()))
+				return errors.Wrap(err, fmt.Sprintf("failed to delete %s %s/%s", obj.GetObjectKind().GroupVersionKind().Kind, obj.GetNamespace(), obj.GetName()))
+			}
+		} else {
+			return nil
 		}
 	}
 	if err := ctx.Create(ctx, obj); err != nil {
