@@ -54,6 +54,13 @@ func (r *ResourcePoolReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		return ctrl.Result{}, errors.Wrap(err, "failed to get ResourcePool")
 	}
 
+	if resourcePool.Status.Free == nil {
+		resourcePool.Status.Free = &types.Resource{}
+	}
+	if resourcePool.Status.Usage == nil {
+		resourcePool.Status.Usage = make([]cloudapiv1alpha1.ResourceUsage, 0)
+	}
+
 	// check validation of the resource pool
 	used := &types.Resource{}
 	for _, usage := range resourcePool.Status.Usage {

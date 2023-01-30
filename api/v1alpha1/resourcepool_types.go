@@ -35,8 +35,8 @@ type ResourcePoolSpec struct {
 
 // ResourcePoolStatus defines the observed state of ResourcePool
 type ResourcePoolStatus struct {
-	Usage []ResourceUsage `json:"usage"`
-	Free  types.Resource  `json:"free"`
+	Usage []ResourceUsage `json:"usage,omitempty"`
+	Free  *types.Resource `json:"free,omitempty"`
 }
 
 //+kubebuilder:object:root=true

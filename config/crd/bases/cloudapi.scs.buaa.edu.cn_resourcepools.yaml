@@ -118,9 +118,6 @@ spec:
                   - typeMeta
                   type: object
                 type: array
-            required:
-            - free
-            - usage
             type: object
         type: object
     served: true
