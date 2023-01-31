@@ -49,6 +49,7 @@ const (
 
 const (
 	s3CmdImageName   = "loheagn/ls3md:1.0.0"
+	wgetImageName    = "scs.buaa.edu.cn:8081/library/wget:alpine"
 	unzipImageName   = "loheagn/go-unarr:0.1.6"
 	gitImageName     = "bitnami/git:2.39.0"
 	builderImageName = "scs.buaa.edu.cn:8081/iobs/buildkit:master-rootless"
@@ -227,6 +228,11 @@ func (ctx *Context) NewJob() (*batchv1.Job, error) {
 	case builder.Spec.Context.Git != nil:
 		if err := ctx.addGitInitContainers(builder.Spec.Context.Git, &podSpec); err != nil {
 			return nil, errors.Wrap(err, "add git init containers")
+		}
+
+	case builder.Spec.Context.HTTP != nil:
+		if err := ctx.addHTTPInitContainers(builder.Spec.Context.HTTP, &podSpec); err != nil {
+			return nil, errors.Wrap(err, "add http init containers")
 		}
 	}
 

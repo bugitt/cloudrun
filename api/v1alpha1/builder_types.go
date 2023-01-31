@@ -51,10 +51,15 @@ type BuildContextGit struct {
 	Ref         *string `json:"ref,omitempty"`
 }
 
+type BuildContextHTTP struct {
+	URL string `json:"url"`
+}
+
 type BuilderContext struct {
-	S3  *BuilderContextS3 `json:"s3,omitempty"`
-	Git *BuildContextGit  `json:"git,omitempty"`
-	Raw *string           `json:"raw,omitempty"`
+	S3   *BuilderContextS3 `json:"s3,omitempty"`
+	Git  *BuildContextGit  `json:"git,omitempty"`
+	HTTP *BuildContextHTTP `json:"http,omitempty"`
+	Raw  *string           `json:"raw,omitempty"`
 }
 
 type DeployerHook struct {
