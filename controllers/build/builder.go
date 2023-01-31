@@ -48,10 +48,10 @@ const (
 )
 
 const (
-	s3CmdImageName   = "loheagn/ls3md:1.0.0"
+	s3CmdImageName   = "scs.buaa.edu.cn:8081/iobs/ls3cmd:1.0.0"
 	wgetImageName    = "scs.buaa.edu.cn:8081/library/wget:alpine"
-	unzipImageName   = "loheagn/go-unarr:0.1.6"
-	gitImageName     = "bitnami/git:2.39.0"
+	unzipImageName   = "scs.buaa.edu.cn:8081/iobs/go-unarr:0.1.6"
+	gitImageName     = "scs.buaa.edu.cn:8081/iobs/bitnami-git:2.39.0"
 	builderImageName = "scs.buaa.edu.cn:8081/iobs/buildkit:master-rootless"
 )
 
