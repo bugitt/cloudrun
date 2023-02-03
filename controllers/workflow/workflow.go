@@ -128,7 +128,7 @@ func (ctx *Context) newBuilder() (*v1alpha1.Builder, error) {
 		builder.Spec.WorkspacePath = *buildSpec.WorkingDir
 	}
 
-	builder.Spec.Destination = fmt.Sprintf("%s/%s/%s:%s", buildSpec.RegistryLocation, workflow.Namespace, workflow.Name, uuid.NewString())
+	builder.Spec.Destination = fmt.Sprintf("%s/%s/%s:%s", *buildSpec.RegistryLocation, workflow.Namespace, workflow.Name, uuid.NewString())
 
 	if buildSpec.PushSecretName != nil {
 		builder.Spec.PushSecretName = *buildSpec.PushSecretName
@@ -154,10 +154,14 @@ func (ctx *Context) getDockerfile() (string, error) {
 	if workflow.Spec.Build.WorkingDir != nil {
 		workingDir = filepath.Join(workspaceAbsPath, *workflow.Spec.Build.WorkingDir)
 	}
+	compileCommand := "true"
+	if workflow.Spec.Build.Command != nil {
+		compileCommand = *workflow.Spec.Build.Command
+	}
 	data := &dockerfileCompileStageTemplateStruct{
 		BaseImage:  workflow.Spec.Build.BaseImage,
 		WorkingDir: workingDir,
-		Command:    workflow.Spec.Build.Command,
+		Command:    compileCommand,
 	}
 	compileTemplate := template.Must(template.New("compileDockerfileTemplate").Parse(dockerfileCompileStageTemplate))
 	dockerfileCompileStageBuf := bytes.Buffer{}

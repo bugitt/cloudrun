@@ -159,6 +159,16 @@ func (in *BuildSpec) DeepCopyInto(out *BuildSpec) {
 		*out = new(string)
 		**out = **in
 	}
+	if in.Command != nil {
+		in, out := &in.Command, &out.Command
+		*out = new(string)
+		**out = **in
+	}
+	if in.RegistryLocation != nil {
+		in, out := &in.RegistryLocation, &out.RegistryLocation
+		*out = new(string)
+		**out = **in
+	}
 	if in.PushSecretName != nil {
 		in, out := &in.PushSecretName, &out.PushSecretName
 		*out = new(string)
