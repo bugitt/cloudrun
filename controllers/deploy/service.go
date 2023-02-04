@@ -90,7 +90,7 @@ func (ctx *Context) createOrUpdateService() error {
 		service = &corev1.Service{
 			ObjectMeta: ctx.NewObjectMeta(ctx.currentRound()),
 			Spec: corev1.ServiceSpec{
-				Selector: ctx.GetServiceLabels(),
+				Selector: ctx.GetServiceLabels(ctx.currentRound()),
 				Ports:    make([]corev1.ServicePort, 0),
 				Type:     corev1.ServiceTypeNodePort,
 			},
@@ -143,9 +143,9 @@ func (ctx *Context) createDeployment() error {
 		Spec: appsv1.DeploymentSpec{
 			Replicas: core.Ptr[int32](1),
 			Selector: &apimetav1.LabelSelector{
-				MatchLabels: ctx.GetServiceLabels(),
+				MatchLabels: ctx.GetServiceLabels(ctx.currentRound()),
 			},
-			Template: ctx.newPodSpec(),
+			Template: ctx.newPodSpec(ctx.currentRound(), true),
 		},
 	}
 	return ctx.CreateResource(deployment, true, false)

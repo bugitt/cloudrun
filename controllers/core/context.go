@@ -45,7 +45,7 @@ type Context interface {
 	NamespacedName() types.NamespacedName
 	NewObjectMeta(round int) apimetav1.ObjectMeta
 
-	GetServiceLabels() map[string]string
+	GetServiceLabels(round int) map[string]string
 
 	CreateResource(obj client.Object, force, update bool) error
 	GetSubResource(obj client.Object, round int) (bool, error)
@@ -172,9 +172,11 @@ func (ctx *DefaultContext) GetSubResource(obj client.Object, round int) (bool, e
 	return true, nil
 }
 
-func (ctx *DefaultContext) GetServiceLabels() map[string]string {
+func (ctx *DefaultContext) GetServiceLabels(round int) map[string]string {
 	return map[string]string{
-		"app": ctx.Name(),
+		"owner.name": ctx.Name(),
+		"round":      fmt.Sprintf("%d", round),
+		"type":       "service",
 	}
 }
 
@@ -187,7 +189,7 @@ func (ctx *DefaultContext) NewObjectMeta(round int) apimetav1.ObjectMeta {
 	}
 
 	name := fmt.Sprintf("%s-%d", ctx.Name(), round)
-	labels := ctx.GetServiceLabels()
+	labels := make(map[string]string)
 	labels["owner.name"] = ctx.Name()
 	labels["round"] = fmt.Sprintf("%d", round)
 

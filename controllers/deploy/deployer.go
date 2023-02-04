@@ -229,12 +229,12 @@ func (ctx *Context) newJob() *batchv1.Job {
 	return &batchv1.Job{
 		ObjectMeta: ctx.NewObjectMeta(ctx.currentRound()),
 		Spec: batchv1.JobSpec{
-			Template: ctx.newPodSpec(),
+			Template: ctx.newPodSpec(ctx.currentRound(), false),
 		},
 	}
 }
 
-func (ctx *Context) newPodSpec() apiv1.PodTemplateSpec {
+func (ctx *Context) newPodSpec(round int, isService bool) apiv1.PodTemplateSpec {
 	containers := make([]apiv1.Container, 0)
 	initContainers := make([]apiv1.Container, 0)
 
@@ -276,13 +276,19 @@ func (ctx *Context) newPodSpec() apiv1.PodTemplateSpec {
 		}
 	}
 
-	return apiv1.PodTemplateSpec{
+	podSpec := apiv1.PodTemplateSpec{
 		ObjectMeta: ctx.NewObjectMeta(ctx.currentRound()),
 		Spec: apiv1.PodSpec{
 			InitContainers: initContainers,
 			Containers:     containers,
 		},
 	}
+	if isService {
+		podSpec.Labels["type"] = "service"
+	} else {
+		podSpec.Labels["type"] = "job"
+	}
+	return podSpec
 }
 
 func convertOriginPort2ContainerPort(originPorts []v1alpha1.Port) []apiv1.ContainerPort {
