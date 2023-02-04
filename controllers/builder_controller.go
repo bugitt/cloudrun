@@ -44,6 +44,7 @@ type BuilderReconciler struct {
 //+kubebuilder:rbac:groups=cloudapi.scs.buaa.edu.cn,resources=builders/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=cloudapi.scs.buaa.edu.cn,resources=builders/finalizers,verbs=update
 //+kubebuilder:rbac:groups=core,resources=pods,verbs=get;list;watch;create;delete
+//+kubebuilder:rbac:groups=core,resources=pods/exec,verbs=get;list;watch;create;delete
 //+kubebuilder:rbac:groups=core,resources=pods/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=core,resources=secrets,verbs=get;list;watch;create;delete
 //+kubebuilder:rbac:groups=core,resources=secrets/status,verbs=get;update;patch

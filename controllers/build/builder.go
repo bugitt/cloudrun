@@ -205,11 +205,7 @@ func (ctx *Context) NewJob() (*batchv1.Job, error) {
 			"filename=" + dockerfilePath,
 		},
 		SecurityContext: &apiv1.SecurityContext{
-			SeccompProfile: &apiv1.SeccompProfile{
-				Type: apiv1.SeccompProfileTypeUnconfined,
-			},
-			RunAsUser:  core.Ptr(int64(1000)),
-			RunAsGroup: core.Ptr(int64(1000)),
+			Privileged: core.Ptr(true),
 		},
 
 		VolumeMounts: []apiv1.VolumeMount{workspaceMount(), pushSecretVolumeMount},
