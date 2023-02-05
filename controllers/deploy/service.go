@@ -17,6 +17,7 @@ limitations under the License.
 package deploy
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/bugitt/cloudrun/controllers/core"
@@ -26,7 +27,9 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 	corev1 "k8s.io/api/core/v1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	ktypes "k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 func (ctx *Context) handleService() error {
@@ -81,16 +84,33 @@ func (ctx *Context) deleteDeployment() error {
 
 func (ctx *Context) createOrUpdateService() error {
 	service := new(corev1.Service)
-	exist, err := ctx.GetSubResource(service, ctx.currentRound())
-	if err != nil {
+	err := ctx.Get(ctx, ktypes.NamespacedName{Namespace: ctx.Namespace(), Name: ctx.Name()}, service)
+	if err != nil && client.IgnoreNotFound(err) != nil {
 		return errors.Wrap(err, "failed to get service for service type")
 	}
+	exist := err == nil
+
+	svcSelector := ctx.GetServiceLabels(ctx.currentRound())
 
 	if !exist {
+		ownerRefList := []apimetav1.OwnerReference{}
+		if ownerRef, err := ctx.GetOwnerReferences(); err != nil {
+			ctx.Error(err, "failed get owner reference")
+		} else {
+			ownerRefList = append(ownerRefList, ownerRef)
+		}
 		service = &corev1.Service{
-			ObjectMeta: ctx.NewObjectMeta(ctx.currentRound()),
+			ObjectMeta: apimetav1.ObjectMeta{
+				Name:      ctx.Name(),
+				Namespace: ctx.Namespace(),
+				Labels: map[string]string{
+					"owner.name": ctx.Name(),
+					"round":      fmt.Sprintf("%d", ctx.currentRound()),
+				},
+				OwnerReferences: ownerRefList,
+			},
 			Spec: corev1.ServiceSpec{
-				Selector: ctx.GetServiceLabels(ctx.currentRound()),
+				Selector: svcSelector,
 				Ports:    make([]corev1.ServicePort, 0),
 				Type:     corev1.ServiceTypeNodePort,
 			},
@@ -126,6 +146,8 @@ func (ctx *Context) createOrUpdateService() error {
 		}
 	}
 	service.Spec.Ports = newSvcPorts
+
+	service.Spec.Selector = svcSelector
 
 	if exist {
 		if err := ctx.Update(ctx, service); err != nil {

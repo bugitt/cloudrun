@@ -38,6 +38,8 @@ import (
 type Context struct {
 	core.Context
 	Deployer *v1alpha1.Deployer
+
+	GetOwnerReferences func() (apimetav1.OwnerReference, error)
 }
 
 func NewContext(originCtx context.Context, cli client.Client, logger logr.Logger, deployer *v1alpha1.Deployer) *Context {
@@ -48,17 +50,20 @@ func NewContext(originCtx context.Context, cli client.Client, logger logr.Logger
 		UID:                deployer.GetUID(),
 		BlockOwnerDeletion: core.Ptr(true),
 	}
+	getOwnerReferences := func() (apimetav1.OwnerReference, error) { return ownerReference, nil }
 	defaultCtx := &core.DefaultContext{
 		Context:            originCtx,
 		Client:             cli,
 		Logger:             logger,
 		NamespacedNameVar:  types.NamespacedName{Namespace: deployer.Namespace, Name: deployer.Name},
 		GetMasterResource:  func() (client.Object, error) { return deployer, nil },
-		GetOwnerReferences: func() (apimetav1.OwnerReference, error) { return ownerReference, nil },
+		GetOwnerReferences: getOwnerReferences,
 	}
 	return &Context{
 		Context:  defaultCtx,
 		Deployer: deployer,
+
+		GetOwnerReferences: getOwnerReferences,
 	}
 }
 
