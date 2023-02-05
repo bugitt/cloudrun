@@ -148,6 +148,7 @@ func (ctx *Context) createOrUpdateService() error {
 	service.Spec.Ports = newSvcPorts
 
 	service.Spec.Selector = svcSelector
+	service.Labels["round"] = fmt.Sprintf("%d", ctx.currentRound())
 
 	if exist {
 		if err := ctx.Update(ctx, service); err != nil {
