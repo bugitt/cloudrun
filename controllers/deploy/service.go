@@ -57,9 +57,23 @@ func (ctx *Context) handleService() error {
 	}
 
 	// 3. check if the service is ready
-	status, message, err := core.GetStatusFromPod(ctx, deployment.Spec.Selector)
+	status, message, pod, err := core.GetStatusFromPod(ctx, deployment.Spec.Selector)
 	if err != nil {
 		return errors.Wrap(err, "failed to get status from pod for service type")
+	}
+	if pod != nil {
+		podWorker := &types.PodWorker{
+			Name:              pod.Name,
+			ContainerList:     make([]string, 0),
+			InitContainerList: make([]string, 0),
+		}
+		for _, container := range pod.Spec.Containers {
+			podWorker.ContainerList = append(podWorker.ContainerList, container.Name)
+		}
+		for _, container := range pod.Spec.InitContainers {
+			podWorker.InitContainerList = append(podWorker.InitContainerList, container.Name)
+		}
+		deployer.CommonStatus().PodWorker = podWorker
 	}
 	deployer.CommonStatus().Status = status
 	deployer.CommonStatus().Message = message

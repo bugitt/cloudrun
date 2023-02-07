@@ -60,9 +60,23 @@ func CreateAndWatchJob[T types.CloudRunCRD](
 	// 3. watch the job status
 	// as we will only create just on pod in the job,
 	// we can use the status of pod to represent the status of job
-	status, message, err := GetStatusFromPod(ctx, job.Spec.Selector)
+	status, message, pod, err := GetStatusFromPod(ctx, job.Spec.Selector)
 	if err != nil {
 		return errors.Wrap(err, "failed to get status from pod")
+	}
+	if pod != nil {
+		podWorker := &types.PodWorker{
+			Name:              pod.Name,
+			ContainerList:     make([]string, 0),
+			InitContainerList: make([]string, 0),
+		}
+		for _, container := range pod.Spec.Containers {
+			podWorker.ContainerList = append(podWorker.ContainerList, container.Name)
+		}
+		for _, container := range pod.Spec.InitContainers {
+			podWorker.InitContainerList = append(podWorker.InitContainerList, container.Name)
+		}
+		obj.CommonStatus().PodWorker = podWorker
 	}
 	if status == types.StatusFailed || status == types.StatusDone {
 		obj.CommonStatus().EndTime = time.Now().Unix()

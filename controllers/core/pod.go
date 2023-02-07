@@ -25,7 +25,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func GetStatusFromPod(ctx Context, selector *metav1.LabelSelector) (status types.Status, message string, err error) {
+func GetStatusFromPod(ctx Context, selector *metav1.LabelSelector) (status types.Status, message string, pod *apiv1.Pod, err error) {
 	podList := &apiv1.PodList{}
 	posListOptions := &client.ListOptions{
 		LabelSelector: labels.SelectorFromSet(selector.MatchLabels),
@@ -39,7 +39,8 @@ func GetStatusFromPod(ctx Context, selector *metav1.LabelSelector) (status types
 		status = types.StatusPending
 		return
 	}
-	pod := podList.Items[0]
+	thisPod := podList.Items[0]
+	pod = &thisPod
 	podStatus := pod.Status
 	switch podStatus.Phase {
 	case apiv1.PodPending:

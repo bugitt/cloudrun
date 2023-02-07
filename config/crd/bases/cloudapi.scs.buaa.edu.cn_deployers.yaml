@@ -145,6 +145,23 @@ spec:
                     description: Message is mainly used to store the error message
                       when the CRD is failed.
                     type: string
+                  podWorker:
+                    properties:
+                      containerList:
+                        items:
+                          type: string
+                        type: array
+                      initContainerList:
+                        items:
+                          type: string
+                        type: array
+                      name:
+                        type: string
+                    required:
+                    - containerList
+                    - initContainerList
+                    - name
+                    type: object
                   startTime:
                     format: int64
                     type: integer
