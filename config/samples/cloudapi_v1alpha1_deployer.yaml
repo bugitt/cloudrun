@@ -26,7 +26,7 @@ metadata:
     app.kubernetes.io/created-by: cloudrun
   name: deployer-sample
 spec:
-  round: 1
+  round: 10
   type: service
   resourcePool: resourcepool-sample
   containers:
