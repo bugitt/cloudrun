@@ -36,8 +36,8 @@ func (ctx *Context) handleService() error {
 	deployer := ctx.Deployer
 
 	// 1. check if the service is already running
-	deployment := new(appsv1.Deployment)
-	exist, err := ctx.GetSubResource(deployment, ctx.currentRound())
+	statefulSet := new(appsv1.StatefulSet)
+	exist, err := ctx.GetSubResource(statefulSet, ctx.currentRound())
 	if err != nil {
 		return errors.Wrap(err, "failed to get deployment for service type")
 	}
@@ -46,7 +46,7 @@ func (ctx *Context) handleService() error {
 		deployer.CommonStatus().Status = types.StatusPending
 		core.PublishStatus(ctx, deployer, nil)
 
-		if err := ctx.createDeployment(); err != nil {
+		if err := ctx.createStatefulSet(); err != nil {
 			return errors.Wrap(err, "failed to create deployment for service type")
 		}
 		return nil
@@ -57,7 +57,7 @@ func (ctx *Context) handleService() error {
 	}
 
 	// 3. check if the service is ready
-	status, message, pod, err := core.GetStatusFromPod(ctx, deployment.Spec.Selector)
+	status, message, pod, err := core.GetStatusFromPod(ctx, statefulSet.Spec.Selector)
 	if err != nil {
 		return errors.Wrap(err, "failed to get status from pod for service type")
 	}
@@ -174,10 +174,10 @@ func (ctx *Context) createOrUpdateService() error {
 	return ctx.CreateResource(service, true, false)
 }
 
-func (ctx *Context) createDeployment() error {
-	deployment := &appsv1.Deployment{
+func (ctx *Context) createStatefulSet() error {
+	deployment := &appsv1.StatefulSet{
 		ObjectMeta: ctx.NewObjectMeta(ctx.currentRound()),
-		Spec: appsv1.DeploymentSpec{
+		Spec: appsv1.StatefulSetSpec{
 			Replicas: core.Ptr[int32](1),
 			Selector: &apimetav1.LabelSelector{
 				MatchLabels: ctx.GetServiceLabels(ctx.currentRound()),

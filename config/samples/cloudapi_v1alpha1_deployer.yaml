@@ -1,4 +1,21 @@
 apiVersion: cloudapi.scs.buaa.edu.cn/v1alpha1
+kind: ResourcePool
+metadata:
+  labels:
+    app.kubernetes.io/name: resourcepool
+    app.kubernetes.io/instance: resourcepool-sample
+    app.kubernetes.io/part-of: cloudrun
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/created-by: cloudrun
+  name: resourcepool-sample
+spec:
+  capacity: 
+    cpu: 2000
+    memory: 4096
+
+---
+
+apiVersion: cloudapi.scs.buaa.edu.cn/v1alpha1
 kind: Deployer
 metadata:
   labels:
@@ -9,7 +26,7 @@ metadata:
     app.kubernetes.io/created-by: cloudrun
   name: deployer-sample
 spec:
-  round: 4
+  round: 1
   type: service
   resourcePool: resourcepool-sample
   containers:
@@ -18,9 +35,6 @@ spec:
       name: container-1
       ports:
         - port: 80
-          protocol: tcp
-          export: true
-        - port: 8080
           protocol: tcp
           export: true
       env:
