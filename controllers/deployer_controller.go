@@ -145,7 +145,7 @@ func (r *DeployerReconciler) Reconcile(originalCtx context.Context, req ctrl.Req
 
 	core.PublishStatus(ctx, deployer, nil)
 
-	if !core.IsDoneOrFailed(deployer) {
+	if !(core.IsDoneOrFailed(deployer) || deployer.Spec.Type == cloudapiv1alpha1.SERVICE && deployer.CommonStatus().Status == types.StatusDoing) {
 		return ctrl.Result{RequeueAfter: 5 * time.Second}, nil
 	}
 
