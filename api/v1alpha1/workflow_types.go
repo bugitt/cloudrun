@@ -58,6 +58,7 @@ type DeploySpec struct {
 	Command      *string           `json:"command,omitempty"`
 	ResourcePool string            `json:"resourcePool"`
 	Resource     ContainerResource `json:"resource"`
+	Envs         map[string]string `json:"env,omitempty"`
 	WorkingDir   *string           `json:"workingDir,omitempty"`
 	//+kubebuilder:validation:Enum=job;service
 	Type  DeployType `json:"type"`

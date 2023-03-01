@@ -212,6 +212,7 @@ func (ctx *Context) newDeployer() (*v1alpha1.Deployer, error) {
 		Image:    "fake-image",
 		Resource: deploy.Resource,
 		Ports:    deploy.Ports,
+		Envs:     deploy.Envs,
 	}
 	if deploy.WorkingDir != nil {
 		container.WorkingDir = *deploy.WorkingDir

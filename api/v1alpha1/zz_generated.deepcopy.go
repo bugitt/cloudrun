@@ -407,6 +407,13 @@ func (in *DeploySpec) DeepCopyInto(out *DeploySpec) {
 		**out = **in
 	}
 	out.Resource = in.Resource
+	if in.Envs != nil {
+		in, out := &in.Envs, &out.Envs
+		*out = make(map[string]string, len(*in))
+		for key, val := range *in {
+			(*out)[key] = val
+		}
+	}
 	if in.WorkingDir != nil {
 		in, out := &in.WorkingDir, &out.WorkingDir
 		*out = new(string)
