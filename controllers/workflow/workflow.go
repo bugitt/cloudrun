@@ -207,9 +207,14 @@ func (ctx *Context) newDeployer() (*v1alpha1.Deployer, error) {
 	deployer.Spec.Type = deploy.Type
 	deployer.Spec.ResourcePool = deploy.ResourcePool
 
+	imageName := "fake-image"
+	if ctx.Workflow.Spec.Build == nil {
+		imageName = *deploy.BaseImage
+	}
+
 	container := v1alpha1.ContainerSpec{
 		Name:     "main",
-		Image:    "fake-image",
+		Image:    imageName,
 		Resource: deploy.Resource,
 		Ports:    deploy.Ports,
 		Envs:     deploy.Envs,
