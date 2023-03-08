@@ -135,7 +135,7 @@ func (r *DeployerReconciler) Reconcile(originalCtx context.Context, req ctrl.Req
 			ctx.Error(err, "Failed to beg resource")
 			return ctrl.Result{}, errors.Wrap(err, "failed to beg resource")
 		}
-		return ctrl.Result{RequeueAfter: 1 * time.Second}, r.Status().Update(ctx, deployer)
+		return ctrl.Result{RequeueAfter: 5 * time.Second}, r.Status().Update(ctx, deployer)
 	}
 
 	if err := ctx.Handle(); err != nil {

@@ -125,7 +125,7 @@ func (r *BuilderReconciler) Reconcile(originalCtx context.Context, req ctrl.Requ
 		builder.CommonStatus().CurrentRound = builder.Spec.Round
 		builder.CommonStatus().StartTime = time.Now().Unix()
 		builder.CommonStatus().EndTime = 0
-		return ctrl.Result{RequeueAfter: 1 * time.Second}, r.Status().Update(originalCtx, builder)
+		return ctrl.Result{RequeueAfter: 5 * time.Second}, r.Status().Update(originalCtx, builder)
 	}
 
 	// create and exec image build job

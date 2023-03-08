@@ -106,7 +106,7 @@ func (r *WorkflowReconciler) Reconcile(originalCtx context.Context, req ctrl.Req
 
 	if workflow.Status.Base == nil {
 		workflow.Status.Base = &types.CommonStatus{}
-		return ctrl.Result{RequeueAfter: 1 * time.Second}, r.Status().Update(originalCtx, workflow)
+		return ctrl.Result{RequeueAfter: 5 * time.Second}, r.Status().Update(originalCtx, workflow)
 	}
 
 	if workflow.Spec.Round < workflow.CommonStatus().CurrentRound {
@@ -133,7 +133,7 @@ func (r *WorkflowReconciler) Reconcile(originalCtx context.Context, req ctrl.Req
 		workflow.CommonStatus().StartTime = time.Now().Unix()
 		workflow.CommonStatus().EndTime = 0
 
-		return ctrl.Result{RequeueAfter: 1 * time.Second}, r.Status().Update(originalCtx, workflow)
+		return ctrl.Result{RequeueAfter: 5 * time.Second}, r.Status().Update(originalCtx, workflow)
 	}
 
 	builder := &cloudapiv1alpha1.Builder{}
