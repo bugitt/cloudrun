@@ -61,8 +61,9 @@ type DeploySpec struct {
 	Envs         map[string]string `json:"env,omitempty"`
 	WorkingDir   *string           `json:"workingDir,omitempty"`
 	//+kubebuilder:validation:Enum=job;service
-	Type  DeployType `json:"type"`
-	Ports []Port     `json:"ports,omitempty"`
+	Type        DeployType      `json:"type"`
+	Ports       []Port          `json:"ports,omitempty"`
+	SidecarList []ContainerSpec `json:"sidecarList,omitempty"`
 }
 
 // WorkflowSpec defines the desired state of Workflow

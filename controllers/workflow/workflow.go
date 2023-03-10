@@ -224,6 +224,10 @@ func (ctx *Context) newDeployer() (*v1alpha1.Deployer, error) {
 	}
 	deployer.Spec.Containers = []v1alpha1.ContainerSpec{container}
 
+	if sidecars := deploy.SidecarList; len(sidecars) != 0 {
+		deployer.Spec.Containers = append(deployer.Spec.Containers, sidecars...)
+	}
+
 	if ctx.Workflow.Spec.Build == nil {
 		deployer.Spec.Round = ctx.Workflow.Spec.Round
 	}
