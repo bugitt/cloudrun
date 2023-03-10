@@ -257,6 +257,10 @@ func (ctx *Context) newPodSpec(round int, isService bool) apiv1.PodTemplateSpec 
 				apiv1.ResourceCPU:    resource.MustParse(fmt.Sprintf("%dm", containerSpec.Resource.CPU)),
 				apiv1.ResourceMemory: resource.MustParse(fmt.Sprintf("%dMi", containerSpec.Resource.Memory)),
 			},
+			Requests: map[apiv1.ResourceName]resource.Quantity{
+				apiv1.ResourceCPU:    resource.MustParse(fmt.Sprintf("%dm", containerSpec.Resource.CPU/2)),
+				apiv1.ResourceMemory: resource.MustParse(fmt.Sprintf("%dMi", containerSpec.Resource.Memory/2)),
+			},
 		}
 
 		return apiv1.Container{
