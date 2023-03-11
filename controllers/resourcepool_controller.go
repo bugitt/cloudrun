@@ -18,6 +18,7 @@ package controllers
 
 import (
 	"context"
+	"time"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -25,6 +26,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	cloudapiv1alpha1 "github.com/bugitt/cloudrun/api/v1alpha1"
+	"github.com/bugitt/cloudrun/controllers/finalize"
 	"github.com/bugitt/cloudrun/types"
 	"github.com/pkg/errors"
 )
@@ -52,6 +54,32 @@ func (r *ResourcePoolReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		}
 		logger.Error(err, "Failed to get ResourcePool.")
 		return ctrl.Result{}, errors.Wrap(err, "failed to get ResourcePool")
+	}
+
+	isToBeDeleted := resourcePool.GetDeletionTimestamp() != nil
+	if isToBeDeleted {
+		if finalize.Contains(resourcePool) {
+			if len(resourcePool.Status.Usage) == 0 {
+				// remove finalizer
+				finalize.Remove(resourcePool)
+				err := r.Update(ctx, resourcePool)
+				if err != nil {
+					return ctrl.Result{}, errors.Wrap(err, "failed to update resourcePool")
+				}
+				return ctrl.Result{}, nil
+			}
+			// otherwise, we need to wait for the resource to be released
+			return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
+		}
+		return ctrl.Result{}, nil
+	}
+
+	if !finalize.Contains(resourcePool) {
+		finalize.Add(resourcePool)
+		if err := r.Update(ctx, resourcePool); err != nil {
+			logger.Error(err, "Failed to update resourcePool after add finalizer")
+			return ctrl.Result{}, errors.Wrap(err, "failed to update resourcePool")
+		}
 	}
 
 	if resourcePool.Status.Free == nil {
