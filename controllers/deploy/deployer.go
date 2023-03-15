@@ -139,24 +139,11 @@ func (ctx *Context) BegResource() error {
 		if err := ctx.Get(ctx, ktypes.NamespacedName{Name: deployer.Spec.ResourcePool}, resourcePool); err != nil {
 			return errors.Wrap(err, "get resource pool")
 		}
-		targetIndex := -1
-		for i, usage := range resourcePool.Status.Usage {
-			if usage.TypeMeta.APIVersion == deployer.APIVersion && usage.TypeMeta.Kind == deployer.Kind {
-				if usage.NamespacedName.Name == deployer.Name && usage.NamespacedName.Namespace == deployer.Namespace {
-					targetIndex = i
-					break
-				}
-			}
+		if resourcePool.Status.Free.CPU < cpu || resourcePool.Status.Free.Memory < memory {
+			deployer.CommonStatus().Status = types.StatusFailed
+			return errors.New("resource pool is not enough")
 		}
-		if targetIndex != -1 {
-			usage := resourcePool.Status.Usage[targetIndex]
-			if resource := usage.Resource; resource.CPU == cpu && resource.Memory == memory {
-				return nil
-			}
-			if ctx.ReleaseResource() != nil {
-				return errors.New("release old resource when try to beg new resource")
-			}
-		}
+
 		resourcePool.Status.Usage = append(resourcePool.Status.Usage, v1alpha1.ResourceUsage{
 			TypeMeta: deployer.TypeMeta,
 			NamespacedName: &types.NamespacedName{
@@ -169,11 +156,6 @@ func (ctx *Context) BegResource() error {
 				Memory: memory,
 			},
 		})
-		if resourcePool.Status.Free.CPU < cpu || resourcePool.Status.Free.Memory < memory {
-			deployer.CommonStatus().Status = types.StatusFailed
-			return errors.New("resource pool is not enough")
-		}
-
 		return ctx.Context.Status().Update(ctx, resourcePool)
 	})
 	if err != nil {
