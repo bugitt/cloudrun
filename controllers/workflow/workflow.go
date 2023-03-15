@@ -116,8 +116,11 @@ func (ctx *Context) newBuilder() (*v1alpha1.Builder, error) {
 	buildSpec := workflow.Spec.Build
 	builder := &v1alpha1.Builder{
 		ObjectMeta: apimetav1.ObjectMeta{
-			Name:        ctx.Name(),
-			Namespace:   ctx.Namespace(),
+			Name:      ctx.Name(),
+			Namespace: ctx.Namespace(),
+			Labels: map[string]string{
+				"workflow": ctx.Workflow.Name,
+			},
 			Annotations: map[string]string{},
 		},
 	}
@@ -208,8 +211,11 @@ func (ctx *Context) newDeployer() (*v1alpha1.Deployer, error) {
 	deploy := ctx.Workflow.Spec.Deploy
 	deployer := &v1alpha1.Deployer{
 		ObjectMeta: apimetav1.ObjectMeta{
-			Name:        ctx.Name(),
-			Namespace:   ctx.Namespace(),
+			Name:      ctx.Name(),
+			Namespace: ctx.Namespace(),
+			Labels: map[string]string{
+				"workflow": ctx.Workflow.Name,
+			},
 			Annotations: map[string]string{},
 		},
 	}
