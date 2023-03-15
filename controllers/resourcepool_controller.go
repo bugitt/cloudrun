@@ -106,7 +106,7 @@ func (r *ResourcePoolReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		return ctrl.Result{}, errors.New("Memory usage is not enough")
 	}
 
-	return ctrl.Result{}, r.Status().Update(ctx, resourcePool)
+	return ctrl.Result{RequeueAfter: 10 * time.Second}, r.Status().Update(ctx, resourcePool)
 }
 
 // SetupWithManager sets up the controller with the Manager.
