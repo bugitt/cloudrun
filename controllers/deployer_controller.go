@@ -127,6 +127,10 @@ func (r *DeployerReconciler) Reconcile(originalCtx context.Context, req ctrl.Req
 			ctx.Error(err, "Failed to backup state")
 			return ctrl.Result{}, errors.Wrap(err, "failed to backup state")
 		}
+		if err := ctx.ReleaseResource(); err != nil {
+			ctx.Error(err, "Failed to release resource")
+			return ctrl.Result{}, errors.Wrap(err, "failed to release resource")
+		}
 		deployer.CommonStatus().Status = types.StatusPending
 		deployer.CommonStatus().CurrentRound = deployer.Spec.Round
 		deployer.CommonStatus().StartTime = time.Now().Unix()
