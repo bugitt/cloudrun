@@ -48,6 +48,8 @@ FROM {{.BaseImage}}
 COPY --from=0 {{.Source}} {{.Target}}
 `
 
+const displayName = "displayName"
+
 type dockerfileCompileStageTemplateStruct struct {
 	BaseImage  string
 	WorkingDir string
@@ -112,10 +114,16 @@ func (ctx *Context) GenerateWorkload() error {
 func (ctx *Context) newBuilder() (*v1alpha1.Builder, error) {
 	workflow := ctx.Workflow
 	buildSpec := workflow.Spec.Build
-	builder := &v1alpha1.Builder{}
-
-	builder.Name = ctx.Name()
-	builder.Namespace = ctx.Namespace()
+	builder := &v1alpha1.Builder{
+		ObjectMeta: apimetav1.ObjectMeta{
+			Name:        ctx.Name(),
+			Namespace:   ctx.Namespace(),
+			Annotations: map[string]string{},
+		},
+	}
+	if len(workflow.Annotations) > 0 && workflow.Annotations[displayName] != "" {
+		builder.Annotations[displayName] = fmt.Sprintf("“%s”的镜像构建任务", workflow.Annotations[displayName])
+	}
 
 	builder.Spec.Context = buildSpec.Context
 	raw, err := ctx.getDockerfile()
@@ -200,10 +208,15 @@ func (ctx *Context) newDeployer() (*v1alpha1.Deployer, error) {
 	deploy := ctx.Workflow.Spec.Deploy
 	deployer := &v1alpha1.Deployer{
 		ObjectMeta: apimetav1.ObjectMeta{
-			Name:      ctx.Name(),
-			Namespace: ctx.Namespace(),
+			Name:        ctx.Name(),
+			Namespace:   ctx.Namespace(),
+			Annotations: map[string]string{},
 		},
 	}
+	if len(ctx.Workflow.Annotations) > 0 && ctx.Workflow.Annotations[displayName] != "" {
+		deployer.Annotations[displayName] = fmt.Sprintf("“%s”的部署任务", ctx.Workflow.Annotations[displayName])
+	}
+
 	deployer.Spec.Type = deploy.Type
 	deployer.Spec.ResourcePool = deploy.ResourcePool
 
