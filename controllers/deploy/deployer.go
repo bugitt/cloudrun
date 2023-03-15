@@ -72,11 +72,15 @@ func (ctx *Context) currentRound() int {
 }
 
 func (ctx *Context) displayName() string {
-	name := ctx.Deployer.ObjectMeta.Labels["displayName"]
-	if len(name) == 0 {
-		name = ctx.Deployer.Name
+	name := ctx.Deployer.ObjectMeta.Annotations["displayName"]
+	if len(name) != 0 {
+		return name
 	}
-	return name
+	name = ctx.Deployer.ObjectMeta.Labels["displayName"]
+	if len(name) != 0 {
+		return name
+	}
+	return ctx.Deployer.Name
 }
 
 func (ctx *Context) GetCurrentResourcePool() (*v1alpha1.ResourcePool, error) {
