@@ -214,6 +214,9 @@ func (ctx *Context) NewJob() (*batchv1.Job, error) {
 	podSpec.Volumes = []apiv1.Volume{workspaceVolume, pushSecretVolume}
 	podSpec.Containers = []apiv1.Container{mainContainer}
 	podSpec.RestartPolicy = "Never"
+	podSpec.NodeSelector = map[string]string{
+		"scs.buaa.edu.cn/network": "true",
+	}
 
 	switch {
 	case builder.Spec.Context.S3 != nil:
