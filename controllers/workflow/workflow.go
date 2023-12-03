@@ -27,7 +27,6 @@ import (
 	"github.com/bugitt/cloudrun/controllers/core"
 	"github.com/bugitt/cloudrun/types"
 	"github.com/go-logr/logr"
-	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -139,7 +138,7 @@ func (ctx *Context) newBuilder() (*v1alpha1.Builder, error) {
 		builder.Spec.WorkspacePath = *buildSpec.WorkingDir
 	}
 
-	builder.Spec.Destination = fmt.Sprintf("%s/%s/%s:%s", *buildSpec.RegistryLocation, workflow.Namespace, workflow.Name, uuid.NewString())
+	builder.Spec.Destination = fmt.Sprintf("%s/%s/%s:v-%d", *buildSpec.RegistryLocation, workflow.Namespace, workflow.Name, workflow.Spec.Round)
 
 	if buildSpec.PushSecretName != nil {
 		builder.Spec.PushSecretName = *buildSpec.PushSecretName
