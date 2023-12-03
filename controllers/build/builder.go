@@ -48,11 +48,11 @@ const (
 )
 
 const (
-	s3CmdImageName   = "scs.buaa.edu.cn:8081/iobs/ls3cmd:1.0.0"
-	wgetImageName    = "scs.buaa.edu.cn:8081/library/wget:alpine"
-	unzipImageName   = "scs.buaa.edu.cn:8081/iobs/go-unarr:0.1.6"
-	gitImageName     = "scs.buaa.edu.cn:8081/iobs/bitnami-git:2.39.0"
-	builderImageName = "scs.buaa.edu.cn:8081/iobs/buildkit:master-rootless"
+	s3CmdImageName   = "harbor.service.internal:8081/library/ls3cmd:1.0.0"
+	wgetImageName    = "harbor.service.internal:8081/library/wget:alpine"
+	unzipImageName   = "harbor.service.internal:8081/library/go-unarr:0.1.6"
+	gitImageName     = "harbor.service.internal:8081/library/bitnami-git:2.39.0"
+	builderImageName = "harbor.service.internal:8081/library/buildkit:this-version"
 )
 
 const (
@@ -214,9 +214,9 @@ func (ctx *Context) NewJob() (*batchv1.Job, error) {
 	podSpec.Volumes = []apiv1.Volume{workspaceVolume, pushSecretVolume}
 	podSpec.Containers = []apiv1.Container{mainContainer}
 	podSpec.RestartPolicy = "Never"
-	podSpec.NodeSelector = map[string]string{
-		"scs.buaa.edu.cn/network": "true",
-	}
+	// podSpec.NodeSelector = map[string]string{
+	// 	"scs.buaa.edu.cn/network": "true",
+	// }
 
 	switch {
 	case builder.Spec.Context.S3 != nil:
