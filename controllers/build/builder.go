@@ -52,7 +52,7 @@ const (
 	wgetImageName    = "harbor.service.internal:8081/library/wget:alpine"
 	unzipImageName   = "harbor.service.internal:8081/library/go-unarr:0.1.6"
 	gitImageName     = "harbor.service.internal:8081/library/bitnami-git:2.39.0"
-	builderImageName = "harbor.service.internal:8081/library/buildkit:this-version"
+	builderImageName = "harbor.service.internal:8081/library/buildkit:latest"
 )
 
 const (
@@ -214,6 +214,10 @@ func (ctx *Context) NewJob() (*batchv1.Job, error) {
 	podSpec.Volumes = []apiv1.Volume{workspaceVolume, pushSecretVolume}
 	podSpec.Containers = []apiv1.Container{mainContainer}
 	podSpec.RestartPolicy = "Never"
+	podSpec.HostAliases = append(podSpec.HostAliases, apiv1.HostAlias{
+		IP:        "172.21.0.1",
+		Hostnames: []string{"harbor.service.internal"},
+	})
 	// podSpec.NodeSelector = map[string]string{
 	// 	"scs.buaa.edu.cn/network": "true",
 	// }
